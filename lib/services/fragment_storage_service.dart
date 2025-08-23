@@ -72,6 +72,11 @@ class FragmentStorageService {
       fragments.add(fragment);
     }
     
+    // 更新话题标签（在保存和事件触发之前）
+    if (fragment.hasTopicTags) {
+      await _updateTopicTagsFromFragment(fragment);
+    }
+    
     await _saveFragments(fragments);
     
     // 发送事件
@@ -82,11 +87,6 @@ class FragmentStorageService {
       StorageService.eventBus.fire(MoodEntryAddedEvent(fragment.toMoodEntry()));
     }
     StorageService.eventBus.fire(MoodDataChangedEvent());
-    
-    // 更新话题标签
-    if (fragment.hasTopicTags) {
-      await _updateTopicTagsFromFragment(fragment);
-    }
   }
   
   // 获取所有Fragment
@@ -340,5 +340,14 @@ class FragmentStorageService {
   Future<void> _saveTopicTags(List<TopicTag> tags) async {
     final jsonString = json.encode(tags.map((t) => t.toJson()).toList());
     await _prefs.setString(_topicTagsKey, jsonString);
+  }
+  
+  // 公共方法：重建话题标签统计（用于修复现有数据）
+  Future<void> rebuildTopicTagsStatistics() async {
+    final allFragments = await getAllFragments();
+    await _updateTopicTags(allFragments);
+    
+    // 触发事件通知所有监听者数据已更新
+    StorageService.eventBus.fire(MoodDataChangedEvent());
   }
 }
