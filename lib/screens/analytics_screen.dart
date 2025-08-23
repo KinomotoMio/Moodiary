@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/analytics_service.dart';
@@ -5,6 +6,7 @@ import '../services/storage_service.dart';
 import '../widgets/chart_widgets.dart';
 import '../widgets/mood_card.dart';
 import '../models/mood_entry.dart';
+import '../events/app_events.dart';
 import 'mood_detail_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -30,17 +32,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   QuickStats? _quickStats;
 
   bool _isLoading = true;
+  
+  // 事件监听
+  late StreamSubscription _moodDataSubscription;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _setupEventListeners();
     _loadAnalyticsData();
+  }
+  
+  // 设置事件监听器
+  void _setupEventListeners() {
+    _moodDataSubscription = StorageService.eventBus.on<MoodDataChangedEvent>().listen((event) {
+      // 当心情数据发生变化时，重新加载分析数据
+      if (mounted) {
+        _loadAnalyticsData();
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _moodDataSubscription.cancel();
     super.dispose();
   }
 
