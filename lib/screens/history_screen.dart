@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
+import '../models/mood_fragment.dart';
 import '../services/storage_service.dart';
 import '../services/fragment_storage_service.dart';
-import '../widgets/mood_card.dart';
+import '../widgets/fragment_card.dart';
 import '../events/app_events.dart';
 import 'mood_detail_screen.dart';
 
@@ -23,8 +24,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final TextEditingController _searchController = TextEditingController();
   
-  List<MoodEntry> _allEntries = [];
-  List<MoodEntry> _filteredEntries = [];
+  List<MoodFragment> _allFragments = [];
+  List<MoodFragment> _filteredFragments = [];
   bool _isLoading = true;
   bool _isSearchExpanded = false;
   
@@ -68,7 +69,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     try {
-      _allEntries = await _fragmentStorage.getAllMoodEntries();
+      _allFragments = await _fragmentStorage.getAllFragments();
       _applyFilters();
     } catch (e) {
       debugPrint('Error loading entries: $e');
@@ -84,20 +85,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _applyFilters() {
-    List<MoodEntry> filtered = List.from(_allEntries);
+    List<MoodFragment> filtered = List.from(_allFragments);
     
-    // 搜索筛选
+    // 搜索筛选（包括文本内容和话题标签）
     final searchQuery = _searchController.text.toLowerCase().trim();
     if (searchQuery.isNotEmpty) {
-      filtered = filtered.where((entry) {
-        return entry.content.toLowerCase().contains(searchQuery);
+      filtered = filtered.where((fragment) {
+        final contentMatch = fragment.textContent?.toLowerCase().contains(searchQuery) ?? false;
+        final tagMatch = fragment.topicTags.any((tag) => tag.toLowerCase().contains(searchQuery));
+        return contentMatch || tagMatch;
       }).toList();
     }
     
     // 情绪类型筛选
     if (_selectedMoodFilter != null) {
-      filtered = filtered.where((entry) {
-        return entry.mood == _selectedMoodFilter;
+      filtered = filtered.where((fragment) {
+        return fragment.mood == _selectedMoodFilter;
       }).toList();
     }
     
@@ -122,19 +125,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
           break;
       }
       
-      filtered = filtered.where((entry) {
-        return entry.timestamp.isAfter(startDate);
+      filtered = filtered.where((fragment) {
+        return fragment.timestamp.isAfter(startDate);
       }).toList();
     }
     
     // 评分筛选
-    filtered = filtered.where((entry) {
-      return entry.emotionScore >= _scoreRangeFilter.start && 
-             entry.emotionScore <= _scoreRangeFilter.end;
+    filtered = filtered.where((fragment) {
+      return fragment.emotionScore >= _scoreRangeFilter.start && 
+             fragment.emotionScore <= _scoreRangeFilter.end;
     }).toList();
     
     setState(() {
-      _filteredEntries = filtered;
+      _filteredFragments = filtered;
     });
   }
 
@@ -176,7 +179,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             tooltip: '筛选',
           ),
           // 菜单按钮
-          if (_allEntries.isNotEmpty)
+          if (_allFragments.isNotEmpty)
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'clear') {
@@ -222,21 +225,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   if (_hasActiveFilters()) _buildFilterChips(),
                   // 记录列表
                   Expanded(
-                    child: _filteredEntries.isEmpty
+                    child: _filteredFragments.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
                             padding: const EdgeInsets.all(16.0),
-                            itemCount: _filteredEntries.length,
+                            itemCount: _filteredFragments.length,
                             itemBuilder: (context, index) {
-                              final entry = _filteredEntries[index];
+                              final fragment = _filteredFragments[index];
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
-                                child: MoodCard(
-                                  entry: entry,
+                                child: FragmentCard(
+                                  fragment: fragment,
                                   onTap: () async {
                                     final result = await Navigator.of(context).push<bool>(
                                       MaterialPageRoute(
-                                        builder: (context) => MoodDetailScreen(entry: entry),
+                                        builder: (context) => MoodDetailScreen(entry: fragment.toMoodEntry()),
                                       ),
                                     );
                                     if (result == true) {
@@ -244,7 +247,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     }
                                   },
                                   onDelete: () {
-                                    _showDeleteDialog(entry);
+                                    _showDeleteDialog(fragment);
                                   },
                                 ),
                               );
@@ -666,7 +669,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildEmptyState() {
-    final bool hasRecords = _allEntries.isNotEmpty;
+    final bool hasRecords = _allFragments.isNotEmpty;
     final bool hasFilters = _hasActiveFilters();
     
     return Center(
@@ -742,7 +745,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  void _showDeleteDialog(MoodEntry entry) {
+  void _showDeleteDialog(MoodFragment fragment) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -756,7 +759,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           FilledButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              await _deleteEntry(entry);
+              await _deleteFragment(fragment);
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
@@ -800,9 +803,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Future<void> _deleteEntry(MoodEntry entry) async {
+  Future<void> _deleteFragment(MoodFragment fragment) async {
     try {
-      await _fragmentStorage.deleteFragment(entry.id);
+      await _fragmentStorage.deleteFragment(fragment.id);
       _loadEntries();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

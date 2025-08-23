@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
+import '../models/mood_fragment.dart';
 import '../services/storage_service.dart';
 import '../services/fragment_storage_service.dart';
-import '../widgets/mood_card.dart';
+import '../widgets/fragment_card.dart';
 import '../events/app_events.dart';
 import 'add_mood_screen.dart';
 import 'mood_detail_screen.dart';
@@ -18,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
-  List<MoodEntry> _recentEntries = [];
+  List<MoodFragment> _recentFragments = [];
   MoodStatistics? _statistics;
   bool _isLoading = true;
   
@@ -54,9 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      // 获取最近的5条记录（使用Fragment存储的兼容性方法）
-      final allEntries = await _fragmentStorage.getAllMoodEntries();
-      _recentEntries = allEntries.take(5).toList();
+      // 获取最近的5条Fragment记录
+      final allFragments = await _fragmentStorage.getAllFragments();
+      _recentFragments = allFragments.take(5).toList();
       
       // 获取统计数据
       _statistics = await _fragmentStorage.getMoodStatistics();
@@ -372,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        if (_recentEntries.isEmpty)
+        if (_recentFragments.isEmpty)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
@@ -402,14 +403,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           )
         else
-          ...(_recentEntries.map((entry) => Padding(
+          ...(_recentFragments.map((fragment) => Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
-                child: MoodCard(
-                  entry: entry,
+                child: FragmentCard(
+                  fragment: fragment,
                   onTap: () async {
                     final result = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(
-                        builder: (context) => MoodDetailScreen(entry: entry),
+                        builder: (context) => MoodDetailScreen(entry: fragment.toMoodEntry()),
                       ),
                     );
                     if (result == true) {
