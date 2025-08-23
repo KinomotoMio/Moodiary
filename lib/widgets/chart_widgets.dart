@@ -33,7 +33,7 @@ class MoodTrendChart extends StatelessWidget {
             horizontalInterval: 20,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: theme.dividerColor.withOpacity(0.2),
+                color: theme.dividerColor.withValues(alpha: 0.2),
                 strokeWidth: 1,
               );
             },
@@ -102,7 +102,7 @@ class MoodTrendChart extends StatelessWidget {
               ),
               belowBarData: BarAreaData(
                 show: true,
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ],
@@ -366,7 +366,7 @@ class RecordFrequencyChart extends StatelessWidget {
             drawVerticalLine: false,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: theme.dividerColor.withOpacity(0.2),
+                color: theme.dividerColor.withValues(alpha: 0.2),
                 strokeWidth: 1,
               );
             },

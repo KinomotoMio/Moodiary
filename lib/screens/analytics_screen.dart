@@ -86,8 +86,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('数据分析'),
@@ -664,7 +662,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: moodColor.withOpacity(0.1),
+                  color: moodColor.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -727,7 +725,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              '暂无${moodLabel}记录',
+                              '暂无$moodLabel记录',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 16,
