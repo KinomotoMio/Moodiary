@@ -1,0 +1,67 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+CLAUDE.md
+
+# Android
+android/app/debug
+android/app/profile
+android/app/release
+android/.gradle/
+android/gradle/
+android/local.properties
+android/key.properties
+*.keystore
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Web
+web/
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+
+# Test
+coverage/
+
+# Exceptions to above rules
+!android/app/src/main/java/com/
+!ios/Runner/AppDelegate.swift
+!ios/Runner/Assets.xcassets/
+!ios/Runner/Base.lproj/
+!ios/Runner/Info.plist
