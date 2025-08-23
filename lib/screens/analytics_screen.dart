@@ -107,13 +107,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       appBar: AppBar(
         title: const Text('数据分析'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadAnalyticsData,
-            tooltip: '刷新数据',
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
