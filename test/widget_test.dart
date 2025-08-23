@@ -15,6 +15,6 @@ void main() {
     await tester.pumpWidget(const MoodiaryApp());
 
     // Verify that the app title is present.
-    expect(find.text('心情日记'), findsOneWidget);
+    expect(find.text('Moodiary'), findsOneWidget);
   });
 }
