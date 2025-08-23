@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
-import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import 'edit_mood_screen.dart';
 
 class MoodDetailScreen extends StatelessWidget {
@@ -12,7 +12,7 @@ class MoodDetailScreen extends StatelessWidget {
     required this.entry,
   });
 
-  StorageService get _storageService => StorageService.instance;
+  FragmentStorageService get _fragmentStorage => FragmentStorageService.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -391,7 +391,7 @@ class MoodDetailScreen extends StatelessWidget {
               
               // 执行删除操作
               try {
-                await _storageService.deleteMoodEntry(entry.id);
+                await _fragmentStorage.deleteFragment(entry.id);
                 if (context.mounted) {
                   Navigator.of(context).pop(true); // 返回 true 表示已删除
                   ScaffoldMessenger.of(context).showSnackBar(

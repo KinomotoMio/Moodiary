@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
-import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../services/emotion_service.dart';
 
 class EditMoodScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class EditMoodScreen extends StatefulWidget {
 
 class _EditMoodScreenState extends State<EditMoodScreen> {
   final TextEditingController _textController = TextEditingController();
-  final StorageService _storageService = StorageService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final EmotionService _emotionService = EmotionService.instance;
   
   bool _isAnalyzing = false;
@@ -359,7 +359,7 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
         // 保持原始时间戳不变
       );
 
-      await _storageService.saveMoodEntry(updatedEntry);
+      await _fragmentStorage.saveMoodEntry(updatedEntry);
 
       if (mounted) {
         Navigator.of(context).pop(true); // 返回true表示成功更新

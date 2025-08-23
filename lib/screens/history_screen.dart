@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
 import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../widgets/mood_card.dart';
 import '../events/app_events.dart';
 import 'mood_detail_screen.dart';
@@ -19,7 +20,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  final StorageService _storageService = StorageService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final TextEditingController _searchController = TextEditingController();
   
   List<MoodEntry> _allEntries = [];
@@ -67,7 +68,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     try {
-      _allEntries = await _storageService.getAllMoodEntries();
+      _allEntries = await _fragmentStorage.getAllMoodEntries();
       _applyFilters();
     } catch (e) {
       debugPrint('Error loading entries: $e');
@@ -801,7 +802,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _deleteEntry(MoodEntry entry) async {
     try {
-      await _storageService.deleteMoodEntry(entry.id);
+      await _fragmentStorage.deleteFragment(entry.id);
       _loadEntries();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -819,7 +820,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _clearAllEntries() async {
     try {
-      await _storageService.clearAllMoodEntries();
+      await _fragmentStorage.clearAllFragments();
       _loadEntries();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

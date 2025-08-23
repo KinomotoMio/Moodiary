@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
-import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../services/emotion_service.dart';
 
 class AddMoodScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class AddMoodScreen extends StatefulWidget {
 
 class _AddMoodScreenState extends State<AddMoodScreen> {
   final TextEditingController _textController = TextEditingController();
-  final StorageService _storageService = StorageService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final EmotionService _emotionService = EmotionService.instance;
   
   bool _isAnalyzing = false;
@@ -338,7 +338,7 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
         emotionScore: _analysisResult!.score,
       );
 
-      await _storageService.saveMoodEntry(entry);
+      await _fragmentStorage.saveMoodEntry(entry);
 
       if (mounted) {
         Navigator.of(context).pop(true); // 返回true表示成功保存

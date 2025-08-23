@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
 import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../widgets/mood_card.dart';
 import '../events/app_events.dart';
 import 'add_mood_screen.dart';
@@ -16,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final StorageService _storageService = StorageService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   List<MoodEntry> _recentEntries = [];
   MoodStatistics? _statistics;
   bool _isLoading = true;
@@ -53,12 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      // 获取最近的5条记录
-      final allEntries = await _storageService.getAllMoodEntries();
+      // 获取最近的5条记录（使用Fragment存储的兼容性方法）
+      final allEntries = await _fragmentStorage.getAllMoodEntries();
       _recentEntries = allEntries.take(5).toList();
       
       // 获取统计数据
-      _statistics = await _storageService.getMoodStatistics();
+      _statistics = await _fragmentStorage.getMoodStatistics();
     } catch (e) {
       debugPrint('Error loading data: $e');
     }
@@ -110,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       for (final entry in testEntries) {
-        await _storageService.saveMoodEntry(entry);
+        await _fragmentStorage.saveMoodEntry(entry);
       }
       await _loadData();
       if (mounted) {

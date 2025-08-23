@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/mood_entry.dart';
-import 'storage_service.dart';
+import 'fragment_storage_service.dart';
 
 class AnalyticsService {
   static AnalyticsService? _instance;
@@ -9,13 +9,13 @@ class AnalyticsService {
   
   AnalyticsService._();
   
-  StorageService get _storageService => StorageService.instance;
+  FragmentStorageService get _fragmentStorage => FragmentStorageService.instance;
   
   // 获取情绪趋势数据（用于折线图）
   Future<List<FlSpot>> getMoodTrendData({int days = 7}) async {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: days));
-    final entries = await _storageService.getMoodEntriesByDateRange(startDate, endDate);
+    final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     if (entries.isEmpty) return [];
     
@@ -49,7 +49,7 @@ class AnalyticsService {
   Future<List<PieChartSectionData>> getMoodDistributionData({int days = 30}) async {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: days));
-    final entries = await _storageService.getMoodEntriesByDateRange(startDate, endDate);
+    final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     if (entries.isEmpty) return [];
     
@@ -90,7 +90,7 @@ class AnalyticsService {
   Future<List<BarChartGroupData>> getRecordFrequencyData({int days = 7}) async {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: days));
-    final entries = await _storageService.getMoodEntriesByDateRange(startDate, endDate);
+    final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     // 按日期统计记录数量
     final dailyCounts = <DateTime, int>{};
@@ -129,7 +129,7 @@ class AnalyticsService {
   Future<MoodInsightsReport> getMoodInsights({int days = 30}) async {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: days));
-    final entries = await _storageService.getMoodEntriesByDateRange(startDate, endDate);
+    final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     if (entries.isEmpty) {
       return MoodInsightsReport.empty();
@@ -147,7 +147,7 @@ class AnalyticsService {
     
     // 计算趋势（与上周期对比）
     final previousPeriodStart = startDate.subtract(Duration(days: days));
-    final previousEntries = await _storageService.getMoodEntriesByDateRange(previousPeriodStart, startDate);
+    final previousEntries = await _fragmentStorage.getMoodEntriesByDateRange(previousPeriodStart, startDate);
     
     double trendPercentage = 0;
     if (previousEntries.isNotEmpty) {
@@ -227,11 +227,11 @@ class AnalyticsService {
     
     // 本周数据（从周一开始）
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekEntries = await _storageService.getMoodEntriesByDateRange(weekStart, now);
+    final weekEntries = await _fragmentStorage.getMoodEntriesByDateRange(weekStart, now);
     
     // 本月数据
     final monthStart = DateTime(now.year, now.month, 1);
-    final monthEntries = await _storageService.getMoodEntriesByDateRange(monthStart, now);
+    final monthEntries = await _fragmentStorage.getMoodEntriesByDateRange(monthStart, now);
     
     return QuickStats(
       weekCount: weekEntries.length,
