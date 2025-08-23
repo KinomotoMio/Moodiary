@@ -18,6 +18,8 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
   bool _isAnalyzing = false;
   bool _isSaving = false;
   EmotionAnalysisResult? _analysisResult;
+  int _characterCount = 0;
+  String? _validationMessage;
   
   @override
   void dispose() {
@@ -99,11 +101,36 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
               ),
               onChanged: (text) {
                 setState(() {
+                  _characterCount = text.length;
                   if (text.trim().isEmpty) {
                     _analysisResult = null;
                   }
+                  _validationMessage = null; // 移除字数限制
                 });
               },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_validationMessage != null)
+                  Text(
+                    _validationMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  )
+                else
+                  const SizedBox(),
+                Text(
+                  '$_characterCount 字符',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             SizedBox(
