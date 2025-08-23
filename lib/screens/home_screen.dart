@@ -85,36 +85,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
       ),
-      floatingActionButton: LayoutBuilder(
-        builder: (context, constraints) {
-          // 在小屏幕上使用圆形FAB，大屏幕使用扩展FAB
-          if (constraints.maxWidth < 400) {
-            return FloatingActionButton(
-              onPressed: () async {
-                final result = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(builder: (context) => const AddMoodScreen()),
-                );
-                if (result == true) {
-                  _loadData();
-                }
-              },
-              child: const Icon(Icons.add),
+      floatingActionButton: Tooltip(
+        message: '记录心情',
+        child: FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(builder: (context) => const AddMoodScreen()),
             );
-          } else {
-            return FloatingActionButton.extended(
-              onPressed: () async {
-                final result = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(builder: (context) => const AddMoodScreen()),
-                );
-                if (result == true) {
-                  _loadData();
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('记录心情'),
-            );
-          }
-        },
+            if (result == true) {
+              _loadData();
+            }
+          },
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
