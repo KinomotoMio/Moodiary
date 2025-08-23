@@ -75,38 +75,87 @@ class _HomeScreenState extends State<HomeScreen> {
     final testEntries = [
       MoodEntry(
         id: '1',
-        content: '今天天气很好，心情特别棒！早上去公园跑步，看到很多可爱的小动物，感觉整个世界都充满了活力。工作上也有新的进展，同事们都很支持我的想法。',
+        content: '今天天气很好，心情特别棒！早上去 #公园 跑步，看到很多可爱的小动物，感觉整个世界都充满了活力。#工作 上也有新的进展，同事们都很支持我的想法。#心情 #运动',
         timestamp: DateTime.now().subtract(const Duration(hours: 2)),
         mood: MoodType.positive,
         emotionScore: 85,
       ),
       MoodEntry(
         id: '2', 
-        content: '有点焦虑，明天有个重要的会议，担心准备得不够充分。虽然努力了很久，但总觉得还有什么遗漏的地方。希望明天能顺利进行。',
+        content: '有点 #焦虑，明天有个重要的 #会议，担心准备得不够充分。虽然努力了很久，但总觉得还有什么遗漏的地方。希望明天能顺利进行。#工作 #压力',
         timestamp: DateTime.now().subtract(const Duration(hours: 8)),
         mood: MoodType.negative,
         emotionScore: 35,
       ),
       MoodEntry(
         id: '3',
-        content: '平平常常的一天，没什么特别的事情发生。按部就班地工作，吃饭，休息。有时候觉得这样的日子也挺好的，不用太兴奋，也不用太担心。',
+        content: '平平常常的一天，没什么特别的事情发生。按部就班地 #工作，吃饭，休息。有时候觉得这样的 #日常 也挺好的，不用太兴奋，也不用太担心。#平静',
         timestamp: DateTime.now().subtract(const Duration(days: 1)),
         mood: MoodType.neutral,
         emotionScore: 50,
       ),
       MoodEntry(
         id: '4',
-        content: '和朋友们一起聚餐，聊了很多有趣的话题。大家分享了最近的生活，虽然各自都有烦恼，但在一起的时候就忘记了所有不开心的事情。友谊真是珍贵！',
+        content: '和 #朋友 们一起聚餐，聊了很多有趣的话题。大家分享了最近的 #生活，虽然各自都有烦恼，但在一起的时候就忘记了所有不开心的事情。#友谊 真是珍贵！#聚会',
         timestamp: DateTime.now().subtract(const Duration(days: 2)),
         mood: MoodType.positive,
         emotionScore: 78,
       ),
       MoodEntry(
         id: '5',
-        content: '感觉有点累了，最近工作压力比较大，加班频繁。需要找个时间好好休息一下，也许应该出去旅行放松放松心情。',
+        content: '感觉有点累了，最近 #工作 #压力 比较大，加班频繁。需要找个时间好好休息一下，也许应该出去 #旅行 放松放松心情。#疲惫',
         timestamp: DateTime.now().subtract(const Duration(days: 3)),
         mood: MoodType.negative,
         emotionScore: 42,
+      ),
+      MoodEntry(
+        id: '6',
+        content: '周末终于可以好好休息了！睡了个懒觉，然后做了喜欢的 #料理。简单的 #幸福 就是这样，不需要太复杂。#周末 #放松 #美食',
+        timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
+        mood: MoodType.positive,
+        emotionScore: 72,
+      ),
+      MoodEntry(
+        id: '7',
+        content: '今天 #学习 了新的知识，感觉很充实。虽然有些内容很难理解，但是慢慢消化总会有收获的。#成长 #知识 #努力',
+        timestamp: DateTime.now().subtract(const Duration(hours: 12)),
+        mood: MoodType.positive,
+        emotionScore: 68,
+      ),
+      MoodEntry(
+        id: '8',
+        content: '下雨天总是让人感到有些 #忧郁。坐在窗边听着雨声，想起了很多往事。#天气 #回忆 #思考',
+        timestamp: DateTime.now().subtract(const Duration(days: 4)),
+        mood: MoodType.negative,
+        emotionScore: 38,
+      ),
+      MoodEntry(
+        id: '9',
+        content: '今天去看了场 #电影，剧情很感人，看得眼泪都出来了。艺术真的有治愈人心的力量。#文艺 #感动 #治愈',
+        timestamp: DateTime.now().subtract(const Duration(days: 5)),
+        mood: MoodType.positive,
+        emotionScore: 75,
+      ),
+      MoodEntry(
+        id: '10',
+        content: '又是一个普通的 #工作 日，处理了很多琐碎的事情。虽然不算特别开心，但也没什么不满的。#日常 #平凡',
+        timestamp: DateTime.now().subtract(const Duration(days: 6)),
+        mood: MoodType.neutral,
+        emotionScore: 55,
+      ),
+      MoodEntry(
+        id: '11',
+        content: '和 #家人 视频通话，听到他们的声音就觉得很温暖。距离不能阻隔 #爱，#思念 让心更近。#家庭 #温暖',
+        timestamp: DateTime.now().subtract(const Duration(days: 7)),
+        mood: MoodType.positive,
+        emotionScore: 80,
+      ),
+      MoodEntry(
+        id: '12',
+        content: '今天犯了个小错误，被领导批评了。虽然知道是为了我好，但还是觉得有点 #沮丧。明天会做得更好。#工作 #反思 #成长',
+        timestamp: DateTime.now().subtract(const Duration(days: 8)),
+        mood: MoodType.negative,
+        emotionScore: 45,
       ),
     ];
 
@@ -117,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已添加5条测试心情记录')),
+          const SnackBar(content: Text('已添加12条测试心情记录，包含丰富的话题标签')),
         );
       }
     } catch (e) {
