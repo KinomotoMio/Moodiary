@@ -329,9 +329,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: MoodCard(
                   entry: entry,
-                  onTap: () {
-                    // TODO: 实现心情详情页面
-                  },
                 ),
               ))),
       ],

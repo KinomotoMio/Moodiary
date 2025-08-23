@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
+import '../screens/mood_detail_screen.dart';
 
 class MoodCard extends StatelessWidget {
   final MoodEntry entry;
@@ -20,7 +21,13 @@ class MoodCard extends StatelessWidget {
       elevation: 2,
       shadowColor: _getMoodColor(entry.mood).withValues(alpha: 0.2),
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap ?? () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => MoodDetailScreen(entry: entry),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(12),
         splashColor: _getMoodColor(entry.mood).withValues(alpha: 0.1),
         highlightColor: _getMoodColor(entry.mood).withValues(alpha: 0.05),
