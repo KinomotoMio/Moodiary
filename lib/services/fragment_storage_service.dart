@@ -271,38 +271,35 @@ class FragmentStorageService {
     await _prefs.setString(_fragmentsKey, jsonString);
   }
   
-  // 私有方法：更新话题标签统计
+  // 私有方法：更新话题标签统计（重新计算所有标签的使用次数）
   Future<void> _updateTopicTags(List<MoodFragment> fragments) async {
-    final Map<String, TopicTag> tagMap = {};
+    final Map<String, int> tagCounts = {};
+    final Map<String, DateTime> tagFirstUsed = {};
     
-    // 获取现有标签
-    final existingTags = await getAllTopicTags();
-    for (final tag in existingTags) {
-      tagMap[tag.name] = tag;
-    }
-    
-    // 统计所有Fragment中的标签
+    // 统计所有Fragment中的标签使用次数
     for (final fragment in fragments) {
       for (final tagName in fragment.topicTags) {
-        if (tagMap.containsKey(tagName)) {
-          // 更新现有标签
-          final existing = tagMap[tagName]!;
-          tagMap[tagName] = existing.copyWith(
-            usageCount: existing.usageCount + 1,
-          );
-        } else {
-          // 创建新标签
-          tagMap[tagName] = TopicTag(
-            name: tagName,
-            firstUsed: fragment.timestamp,
-            usageCount: 1,
-          );
+        tagCounts[tagName] = (tagCounts[tagName] ?? 0) + 1;
+        
+        // 记录标签第一次使用的时间
+        if (!tagFirstUsed.containsKey(tagName) || 
+            fragment.timestamp.isBefore(tagFirstUsed[tagName]!)) {
+          tagFirstUsed[tagName] = fragment.timestamp;
         }
       }
     }
     
+    // 创建标签对象列表
+    final tags = tagCounts.entries.map((entry) {
+      return TopicTag(
+        name: entry.key,
+        firstUsed: tagFirstUsed[entry.key]!,
+        usageCount: entry.value,
+      );
+    }).toList();
+    
     // 保存更新后的标签
-    await _saveTopicTags(tagMap.values.toList());
+    await _saveTopicTags(tags);
   }
   
   // 私有方法：从单个Fragment更新话题标签

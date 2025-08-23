@@ -178,24 +178,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 临时：重建标签统计的方法
-  Future<void> _rebuildTagsStatistics() async {
-    try {
-      await _fragmentStorage.rebuildTopicTagsStatistics();
-      await _loadData(); // 重新加载数据
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('标签统计已重建完成！')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('重建标签统计失败: $e')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
           ),
         ),
+        centerTitle: true,
         elevation: 0,
         actions: [
           // 临时：添加测试数据按钮  
@@ -221,12 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.data_array),
             onPressed: _addTestData,
             tooltip: '添加测试数据',
-          ),
-          // 临时：重建标签统计按钮
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _rebuildTagsStatistics,
-            tooltip: '重建标签统计',
           ),
         ],
       ),
