@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/analytics_service.dart';
-import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../widgets/chart_widgets.dart';
-import '../widgets/mood_card.dart';
+import '../widgets/fragment_card.dart';
+import '../models/mood_fragment.dart';
 import '../models/mood_entry.dart';
 import '../events/app_events.dart';
+import '../services/storage_service.dart';
 import 'mood_detail_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AnalyticsService _analyticsService = AnalyticsService.instance;
-  final StorageService _storageService = StorageService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
 
   // 数据状态
   List<FlSpot> _weekTrendData = [];
@@ -290,19 +292,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               final total = _moodCounts.values.reduce((a, b) => a + b);
               final percentage = (count / total) * 100;
 
-              const moodLabels = {
+              final moodLabels = {
                 MoodType.positive: '积极情绪',
                 MoodType.neutral: '平静状态',
                 MoodType.negative: '消极情绪',
               };
 
-              const moodColors = {
-                MoodType.positive: Color(0xFF4CAF50),
-                MoodType.neutral: Color(0xFFFF9800),
-                MoodType.negative: Color(0xFFF44336),
+              final moodColors = {
+                MoodType.positive: const Color(0xFF4CAF50),
+                MoodType.neutral: const Color(0xFFFF9800),
+                MoodType.negative: const Color(0xFFF44336),
               };
 
-              const moodDescriptions = {
+              final moodDescriptions = {
                 MoodType.positive: '感到快乐、满足、充满活力的时刻',
                 MoodType.neutral: '心境平和、状态稳定的时刻',
                 MoodType.negative: '感到沮丧、压力、不安的时刻',
@@ -646,17 +648,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   // 获取特定情绪类型的记录
-  Future<List<MoodEntry>> _getMoodEntriesByType(MoodType moodType) async {
+  Future<List<MoodFragment>> _getMoodFragmentsByType(MoodType moodType) async {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(const Duration(days: 30));
-    final allEntries = await _storageService.getMoodEntriesByDateRange(startDate, endDate);
+    final allFragments = await _fragmentStorage.getFragmentsByDateRange(startDate, endDate);
     
-    return allEntries.where((entry) => entry.mood == moodType).toList();
+    return allFragments.where((fragment) => fragment.mood == moodType).toList();
   }
 
   // 显示特定情绪类型的记录弹窗
   void _showMoodEntriesDialog(MoodType moodType, String moodLabel, Color moodColor) async {
-    final entries = await _getMoodEntriesByType(moodType);
+    final fragments = await _getMoodFragmentsByType(moodType);
     
     if (!mounted) return;
     
@@ -684,7 +686,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       backgroundColor: moodColor,
                       radius: 16,
                       child: Text(
-                        entries.length.toString(),
+                        fragments.length.toString(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -705,7 +707,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             ),
                           ),
                           Text(
-                            '过去30天的${entries.length}条记录',
+                            '过去30天的${fragments.length}条记录',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -723,7 +725,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               
               // 记录列表
               Expanded(
-                child: entries.isEmpty
+                child: fragments.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -746,18 +748,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: entries.length,
+                        itemCount: fragments.length,
                         itemBuilder: (context, index) {
-                          final entry = entries[index];
+                          final fragment = fragments[index];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: MoodCard(
-                              entry: entry,
+                            child: FragmentCard(
+                              fragment: fragment,
                               onTap: () {
                                 Navigator.of(context).pop(); // 关闭弹窗
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (context) => MoodDetailScreen(entry: entry),
+                                    builder: (context) => MoodDetailScreen(entry: fragment.toMoodEntry()),
                                   ),
                                 );
                               },
