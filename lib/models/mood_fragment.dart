@@ -118,7 +118,7 @@ class MoodFragment {
       id: entry.id,
       textContent: entry.content.isEmpty ? null : entry.content,
       media: [],
-      topicTags: _extractTopicTags(entry.content),
+      topicTags: extractTopicTags(entry.content),
       timestamp: entry.timestamp,
       mood: entry.mood,
       emotionScore: entry.emotionScore,
@@ -140,7 +140,7 @@ class MoodFragment {
     
     // 从文本内容中提取标签
     if (textContent != null && textContent.isNotEmpty) {
-      allTags.addAll(_extractTopicTags(textContent));
+      allTags.addAll(extractTopicTags(textContent));
     }
     
     // 确定Fragment类型
@@ -166,7 +166,7 @@ class MoodFragment {
   }
 
   // 提取话题标签的静态方法
-  static List<String> _extractTopicTags(String content) {
+  static List<String> extractTopicTags(String content) {
     final regex = RegExp(r'#(\w+)');
     final matches = regex.allMatches(content);
     return matches.map((match) => match.group(1)!).toList();
