@@ -339,113 +339,136 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _showFilterDialog() {
+    // 创建对话框内的临时状态
+    MoodType? tempMoodFilter = _selectedMoodFilter;
+    TimeFilter tempTimeFilter = _selectedTimeFilter;
+    RangeValues tempScoreRange = _scoreRangeFilter;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('筛选选项'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 情绪类型筛选
-              Text(
-                '情绪类型',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8.0,
-                children: [
-                  FilterChip(
-                    label: const Text('全部'),
-                    selected: _selectedMoodFilter == null,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedMoodFilter = null;
-                      });
-                    },
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('筛选选项'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 情绪类型筛选
+                Text(
+                  '情绪类型',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  ...MoodType.values.map((mood) => FilterChip(
-                    label: Text(mood.displayName),
-                    avatar: Text(mood.emoji),
-                    selected: _selectedMoodFilter == mood,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  children: [
+                    FilterChip(
+                      label: const Text('全部'),
+                      selected: tempMoodFilter == null,
+                      onSelected: (selected) {
+                        setDialogState(() {
+                          tempMoodFilter = null;
+                        });
+                      },
+                    ),
+                    ...MoodType.values.map((mood) => FilterChip(
+                      label: Text(mood.displayName),
+                      avatar: Text(mood.emoji),
+                      selected: tempMoodFilter == mood,
+                      onSelected: (selected) {
+                        setDialogState(() {
+                          tempMoodFilter = selected ? mood : null;
+                        });
+                      },
+                    )),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // 时间筛选
+                Text(
+                  '时间范围',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  children: TimeFilter.values.map((filter) => FilterChip(
+                    label: Text(filter.displayName),
+                    selected: tempTimeFilter == filter,
                     onSelected: (selected) {
-                      setState(() {
-                        _selectedMoodFilter = selected ? mood : null;
+                      setDialogState(() {
+                        tempTimeFilter = selected ? filter : TimeFilter.all;
                       });
                     },
-                  )),
-                ],
-              ),
-              const SizedBox(height: 16),
-              
-              // 时间筛选
-              Text(
-                '时间范围',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  )).toList(),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8.0,
-                children: TimeFilter.values.map((filter) => FilterChip(
-                  label: Text(filter.displayName),
-                  selected: _selectedTimeFilter == filter,
-                  onSelected: (selected) {
-                    setState(() {
-                      _selectedTimeFilter = selected ? filter : TimeFilter.all;
+                const SizedBox(height: 16),
+                
+                // 评分筛选
+                Text(
+                  '情绪评分 (${tempScoreRange.start.round()}-${tempScoreRange.end.round()})',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                RangeSlider(
+                  values: tempScoreRange,
+                  min: 0,
+                  max: 100,
+                  divisions: 10,
+                  labels: RangeLabels(
+                    tempScoreRange.start.round().toString(),
+                    tempScoreRange.end.round().toString(),
+                  ),
+                  onChanged: (values) {
+                    setDialogState(() {
+                      tempScoreRange = values;
                     });
                   },
-                )).toList(),
-              ),
-              const SizedBox(height: 16),
-              
-              // 评分筛选
-              Text(
-                '情绪评分 (${_scoreRangeFilter.start.round()}-${_scoreRangeFilter.end.round()})',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: 8),
-              RangeSlider(
-                values: _scoreRangeFilter,
-                min: 0,
-                max: 100,
-                divisions: 10,
-                labels: RangeLabels(
-                  _scoreRangeFilter.start.round().toString(),
-                  _scoreRangeFilter.end.round().toString(),
-                ),
-                onChanged: (values) {
-                  setState(() {
-                    _scoreRangeFilter = values;
-                  });
-                },
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                // 重置到默认值
+                setDialogState(() {
+                  tempMoodFilter = null;
+                  tempTimeFilter = TimeFilter.all;
+                  tempScoreRange = const RangeValues(0, 100);
+                });
+              },
+              child: const Text('重置'),
+            ),
+            FilledButton(
+              onPressed: () {
+                // 应用临时筛选条件到实际状态
+                setState(() {
+                  _selectedMoodFilter = tempMoodFilter;
+                  _selectedTimeFilter = tempTimeFilter;
+                  _scoreRangeFilter = tempScoreRange;
+                });
+                _applyFilters();
+                Navigator.of(context).pop();
+              },
+              child: const Text('应用'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _resetFilters();
-              Navigator.of(context).pop();
-            },
-            child: const Text('重置'),
-          ),
-          FilledButton(
-            onPressed: () {
-              _applyFilters();
-              Navigator.of(context).pop();
-            },
-            child: const Text('应用'),
-          ),
-        ],
       ),
     );
   }
