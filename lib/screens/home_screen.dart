@@ -109,7 +109,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('心情日记'),
+        title: Text(
+          'Moodiary',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            foreground: Paint()
+              ..shader = const LinearGradient(
+                colors: [Color(0xFFFF6B8A), Color(0xFFFF8FA3)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+          ),
+        ),
         elevation: 0,
         actions: [
           // 临时：添加测试数据按钮  

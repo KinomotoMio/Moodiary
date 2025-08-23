@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/analytics_service.dart';
+import '../services/storage_service.dart';
 import '../widgets/chart_widgets.dart';
+import '../widgets/mood_card.dart';
 import '../models/mood_entry.dart';
+import 'mood_detail_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -15,6 +18,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AnalyticsService _analyticsService = AnalyticsService.instance;
+  final StorageService _storageService = StorageService.instance;
 
   // 数据状态
   List<FlSpot> _weekTrendData = [];
@@ -299,6 +303,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
+                  onTap: () => _showMoodEntriesDialog(
+                    mood,
+                    moodLabels[mood] ?? '',
+                    moodColors[mood] ?? Colors.grey,
+                  ),
                   leading: CircleAvatar(
                     backgroundColor: moodColors[mood],
                     child: Text(
@@ -311,12 +320,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   ),
                   title: Text(moodLabels[mood] ?? ''),
                   subtitle: Text(moodDescriptions[mood] ?? ''),
-                  trailing: Text(
-                    '${percentage.toStringAsFixed(1)}%',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: moodColors[mood],
-                        ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${percentage.toStringAsFixed(1)}%',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: moodColors[mood],
+                            ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: moodColors[mood],
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -615,5 +635,133 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     }
 
     return tips;
+  }
+
+  // 获取特定情绪类型的记录
+  Future<List<MoodEntry>> _getMoodEntriesByType(MoodType moodType) async {
+    final endDate = DateTime.now();
+    final startDate = endDate.subtract(const Duration(days: 30));
+    final allEntries = await _storageService.getMoodEntriesByDateRange(startDate, endDate);
+    
+    return allEntries.where((entry) => entry.mood == moodType).toList();
+  }
+
+  // 显示特定情绪类型的记录弹窗
+  void _showMoodEntriesDialog(MoodType moodType, String moodLabel, Color moodColor) async {
+    final entries = await _getMoodEntriesByType(moodType);
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 标题栏
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: moodColor.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: moodColor,
+                      radius: 16,
+                      child: Text(
+                        entries.length.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            moodLabel,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: moodColor,
+                            ),
+                          ),
+                          Text(
+                            '过去30天的${entries.length}条记录',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // 记录列表
+              Expanded(
+                child: entries.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.sentiment_neutral,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '暂无${moodLabel}记录',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: entries.length,
+                        itemBuilder: (context, index) {
+                          final entry = entries[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: MoodCard(
+                              entry: entry,
+                              onTap: () {
+                                Navigator.of(context).pop(); // 关闭弹窗
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => MoodDetailScreen(entry: entry),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
