@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
 import '../services/storage_service.dart';
 import '../widgets/mood_card.dart';
+import '../events/app_events.dart';
 import 'mood_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -29,18 +31,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
   MoodType? _selectedMoodFilter;
   TimeFilter _selectedTimeFilter = TimeFilter.all;
   RangeValues _scoreRangeFilter = const RangeValues(0, 100);
+  
+  // 事件监听
+  late StreamSubscription _moodDataSubscription;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _setupEventListeners();
     _loadEntries();
+  }
+  
+  // 设置事件监听器
+  void _setupEventListeners() {
+    _moodDataSubscription = StorageService.eventBus.on<MoodDataChangedEvent>().listen((event) {
+      // 当心情数据发生变化时，重新加载数据
+      if (mounted) {
+        _loadEntries();
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _moodDataSubscription.cancel(); // 取消事件监听
     super.dispose();
   }
 

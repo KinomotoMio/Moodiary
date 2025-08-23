@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:event_bus/event_bus.dart';
 import '../models/mood_entry.dart';
+import '../events/app_events.dart';
 
 class StorageService {
   static const String _moodEntriesKey = 'mood_entries';
@@ -12,6 +14,10 @@ class StorageService {
   StorageService._();
   
   late SharedPreferences _prefs;
+  static final EventBus _eventBus = EventBus();
+  
+  // 获取事件总线实例
+  static EventBus get eventBus => _eventBus;
   
   // 初始化服务
   Future<void> initialize() async {
@@ -24,13 +30,23 @@ class StorageService {
     
     // 检查是否已存在，如果存在则更新，否则添加
     final existingIndex = entries.indexWhere((e) => e.id == entry.id);
-    if (existingIndex != -1) {
+    bool isUpdate = existingIndex != -1;
+    
+    if (isUpdate) {
       entries[existingIndex] = entry;
     } else {
       entries.add(entry);
     }
     
     await _saveMoodEntries(entries);
+    
+    // 发送事件
+    if (isUpdate) {
+      _eventBus.fire(MoodEntryUpdatedEvent(entry));
+    } else {
+      _eventBus.fire(MoodEntryAddedEvent(entry));
+    }
+    _eventBus.fire(MoodDataChangedEvent());
   }
   
   // 获取所有心情记录
@@ -80,11 +96,19 @@ class StorageService {
     final entries = await getAllMoodEntries();
     entries.removeWhere((entry) => entry.id == id);
     await _saveMoodEntries(entries);
+    
+    // 发送事件
+    _eventBus.fire(MoodEntryDeletedEvent(id));
+    _eventBus.fire(MoodDataChangedEvent());
   }
   
   // 清空所有心情记录
   Future<void> clearAllMoodEntries() async {
     await _prefs.remove(_moodEntriesKey);
+    
+    // 发送事件
+    _eventBus.fire(DataClearedEvent());
+    _eventBus.fire(MoodDataChangedEvent());
   }
   
   // 获取心情统计数据
