@@ -46,6 +46,65 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // 临时：添加测试数据的方法
+  Future<void> _addTestData() async {
+    final testEntries = [
+      MoodEntry(
+        id: '1',
+        content: '今天天气很好，心情特别棒！早上去公园跑步，看到很多可爱的小动物，感觉整个世界都充满了活力。工作上也有新的进展，同事们都很支持我的想法。',
+        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+        mood: MoodType.positive,
+        emotionScore: 85,
+      ),
+      MoodEntry(
+        id: '2', 
+        content: '有点焦虑，明天有个重要的会议，担心准备得不够充分。虽然努力了很久，但总觉得还有什么遗漏的地方。希望明天能顺利进行。',
+        timestamp: DateTime.now().subtract(const Duration(hours: 8)),
+        mood: MoodType.negative,
+        emotionScore: 35,
+      ),
+      MoodEntry(
+        id: '3',
+        content: '平平常常的一天，没什么特别的事情发生。按部就班地工作，吃饭，休息。有时候觉得这样的日子也挺好的，不用太兴奋，也不用太担心。',
+        timestamp: DateTime.now().subtract(const Duration(days: 1)),
+        mood: MoodType.neutral,
+        emotionScore: 50,
+      ),
+      MoodEntry(
+        id: '4',
+        content: '和朋友们一起聚餐，聊了很多有趣的话题。大家分享了最近的生活，虽然各自都有烦恼，但在一起的时候就忘记了所有不开心的事情。友谊真是珍贵！',
+        timestamp: DateTime.now().subtract(const Duration(days: 2)),
+        mood: MoodType.positive,
+        emotionScore: 78,
+      ),
+      MoodEntry(
+        id: '5',
+        content: '感觉有点累了，最近工作压力比较大，加班频繁。需要找个时间好好休息一下，也许应该出去旅行放松放松心情。',
+        timestamp: DateTime.now().subtract(const Duration(days: 3)),
+        mood: MoodType.negative,
+        emotionScore: 42,
+      ),
+    ];
+
+    try {
+      for (final entry in testEntries) {
+        await _storageService.saveMoodEntry(entry);
+      }
+      await _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已添加5条测试心情记录')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('添加测试数据失败: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,6 +112,12 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('心情日记'),
         elevation: 0,
         actions: [
+          // 临时：添加测试数据按钮  
+          IconButton(
+            icon: const Icon(Icons.data_array),
+            onPressed: _addTestData,
+            tooltip: '添加测试数据',
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () async {
