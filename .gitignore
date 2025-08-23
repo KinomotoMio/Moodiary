@@ -20,6 +20,8 @@ Thumbs.db
 
 # Project specific
 CLAUDE.md
+README.md
+.claude/
 
 # Android
 android/app/debug
