@@ -20,7 +20,13 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _screens = [
       const HomeScreen(),
-      const HistoryScreen(),
+      HistoryScreen(
+        onNavigateToHome: () {
+          setState(() {
+            _currentIndex = 0; // 切换到首页
+          });
+        },
+      ),
       const AnalyticsScreen(),
     ];
   }

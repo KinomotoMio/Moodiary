@@ -5,7 +5,12 @@ import '../widgets/mood_card.dart';
 import 'mood_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final VoidCallback? onNavigateToHome;
+  
+  const HistoryScreen({
+    super.key,
+    this.onNavigateToHome,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -694,10 +699,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
             else
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  // 如果有回调，使用回调切换到主页；否则尝试pop
+                  if (widget.onNavigateToHome != null) {
+                    widget.onNavigateToHome!();
+                  } else if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
                 },
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('回到首页'),
+                icon: const Icon(Icons.home),
+                label: const Text('开始记录'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
