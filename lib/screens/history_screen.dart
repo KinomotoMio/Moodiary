@@ -411,27 +411,117 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: 16),
                 
                 // 评分筛选
-                Text(
-                  '情绪评分 (${tempScoreRange.start.round()}-${tempScoreRange.end.round()})',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '情绪评分',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        // 最小值输入
+                        GestureDetector(
+                          onTap: () => _showScoreInputDialog(
+                            context: context,
+                            title: '设置最小分数',
+                            initialValue: tempScoreRange.start.round(),
+                            onChanged: (value) {
+                              if (value < tempScoreRange.end) {
+                                setDialogState(() {
+                                  tempScoreRange = RangeValues(value.toDouble(), tempScoreRange.end);
+                                });
+                              }
+                            },
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Theme.of(context).colorScheme.outline),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${tempScoreRange.start.round()}',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('-'),
+                        ),
+                        // 最大值输入
+                        GestureDetector(
+                          onTap: () => _showScoreInputDialog(
+                            context: context,
+                            title: '设置最大分数',
+                            initialValue: tempScoreRange.end.round(),
+                            onChanged: (value) {
+                              if (value > tempScoreRange.start) {
+                                setDialogState(() {
+                                  tempScoreRange = RangeValues(tempScoreRange.start, value.toDouble());
+                                });
+                              }
+                            },
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Theme.of(context).colorScheme.outline),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${tempScoreRange.end.round()}',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 RangeSlider(
                   values: tempScoreRange,
                   min: 0,
                   max: 100,
-                  divisions: 10,
+                  divisions: 20, // 100/5 = 20个分割点，每5分一个吸附点
                   labels: RangeLabels(
                     tempScoreRange.start.round().toString(),
                     tempScoreRange.end.round().toString(),
                   ),
                   onChanged: (values) {
                     setDialogState(() {
-                      tempScoreRange = values;
+                      // 吸附到5的倍数
+                      final start = (values.start / 5).round() * 5.0;
+                      final end = (values.end / 5).round() * 5.0;
+                      tempScoreRange = RangeValues(start, end);
                     });
                   },
+                ),
+                // 刻度标记
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (int i = 0; i <= 100; i += 25)
+                        Text(
+                          i.toString(),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -469,6 +559,85 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showScoreInputDialog({
+    required BuildContext context,
+    required String title,
+    required int initialValue,
+    required Function(int) onChanged,
+  }) {
+    final TextEditingController controller = TextEditingController(text: initialValue.toString());
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: '分数 (0-100)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixText: '分',
+              ),
+              autofocus: true,
+              onSubmitted: (value) {
+                final score = int.tryParse(value);
+                if (score != null && score >= 0 && score <= 100) {
+                  onChanged(score);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            // 快速选择按钮
+            Wrap(
+              spacing: 8.0,
+              children: [
+                for (int score in [0, 25, 50, 75, 100])
+                  FilterChip(
+                    label: Text('$score'),
+                    selected: initialValue == score,
+                    onSelected: (selected) {
+                      if (selected) {
+                        controller.text = score.toString();
+                        onChanged(score);
+                        Navigator.of(context).pop();
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final score = int.tryParse(controller.text);
+              if (score != null && score >= 0 && score <= 100) {
+                onChanged(score);
+                Navigator.of(context).pop();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请输入0-100之间的数字')),
+                );
+              }
+            },
+            child: const Text('确定'),
+          ),
+        ],
       ),
     );
   }
