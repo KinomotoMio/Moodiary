@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildWelcomeCard() {
     final now = DateTime.now();
     final greeting = _getGreeting();
-    final date = DateFormat('MM月dd日 EEEE', 'zh_CN').format(now);
+    final date = _formatDate(now);
 
     return Card(
       child: Padding(
@@ -346,6 +346,14 @@ class _HomeScreenState extends State<HomeScreen> {
       return '下午好';
     } else {
       return '晚上好';
+    }
+  }
+
+  String _formatDate(DateTime dateTime) {
+    try {
+      return DateFormat('MM月dd日 EEEE', 'zh_CN').format(dateTime);
+    } catch (e) {
+      return DateFormat('MM月dd日 EEEE').format(dateTime);
     }
   }
 }

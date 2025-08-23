@@ -153,7 +153,11 @@ class MoodCard extends StatelessWidget {
       return '昨天 ${DateFormat('HH:mm').format(dateTime)}';
     } else if (difference.inDays < 7) {
       // 一周内
-      return DateFormat('EEEE HH:mm', 'zh_CN').format(dateTime);
+      try {
+        return DateFormat('EEEE HH:mm', 'zh_CN').format(dateTime);
+      } catch (e) {
+        return DateFormat('EEEE HH:mm').format(dateTime);
+      }
     } else if (dateTime.year == now.year) {
       // 今年
       return DateFormat('MM月dd日 HH:mm').format(dateTime);
