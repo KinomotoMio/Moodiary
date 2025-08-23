@@ -17,10 +17,15 @@ class MoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 2,
+      shadowColor: _getMoodColor(entry.mood).withValues(alpha: 0.2),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        splashColor: _getMoodColor(entry.mood).withValues(alpha: 0.1),
+        highlightColor: _getMoodColor(entry.mood).withValues(alpha: 0.05),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,11 +38,19 @@ class MoodCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getMoodColor(entry.mood).withValues(alpha: 0.1),
+                      color: _getMoodColor(entry.mood).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _getMoodColor(entry.mood).withValues(alpha: 0.3),
+                        color: _getMoodColor(entry.mood).withValues(alpha: 0.2),
+                        width: 1.5,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getMoodColor(entry.mood).withValues(alpha: 0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -62,28 +75,44 @@ class MoodCard extends StatelessWidget {
                   _buildEmotionScore(),
                   if (onDelete != null) ...[
                     const SizedBox(width: 8),
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      onPressed: onDelete,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 24,
-                        minHeight: 24,
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        onTap: onDelete,
+                        borderRadius: BorderRadius.circular(20),
+                        splashColor: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.delete_outline,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                entry.content,
-                style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  height: 1.4,
+                ),
+                child: Text(
+                  entry.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -103,11 +132,19 @@ class MoodCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: _getScoreColor().withValues(alpha: 0.1),
+        color: _getScoreColor().withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getScoreColor().withValues(alpha: 0.3),
+          color: _getScoreColor().withValues(alpha: 0.2),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: _getScoreColor().withValues(alpha: 0.1),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Text(
         '${entry.emotionScore}分',
