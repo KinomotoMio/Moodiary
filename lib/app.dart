@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_screen.dart';
 
 class MoodiaryApp extends StatelessWidget {
   const MoodiaryApp({super.key});
@@ -41,7 +41,7 @@ class MoodiaryApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      home: const MainScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

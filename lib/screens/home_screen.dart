@@ -4,7 +4,6 @@ import '../models/mood_entry.dart';
 import '../services/storage_service.dart';
 import '../widgets/mood_card.dart';
 import 'add_mood_screen.dart';
-import 'history_screen.dart';
 import 'mood_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -118,17 +117,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.data_array),
             onPressed: _addTestData,
             tooltip: '添加测试数据',
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () async {
-              final result = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(builder: (context) => const HistoryScreen()),
-              );
-              if (result == true) {
-                _loadData();
-              }
-            },
           ),
         ],
       ),
@@ -346,18 +334,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (_recentEntries.isNotEmpty)
-              TextButton(
-                onPressed: () async {
-                  final result = await Navigator.of(context).push<bool>(
-                    MaterialPageRoute(builder: (context) => const HistoryScreen()),
-                  );
-                  if (result == true) {
-                    _loadData();
-                  }
-                },
-                child: const Text('查看全部'),
-              ),
           ],
         ),
         const SizedBox(height: 12),
