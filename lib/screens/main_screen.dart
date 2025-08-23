@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'analytics_screen.dart';
+import 'topic_tags_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -28,6 +29,7 @@ class _MainScreenState extends State<MainScreen> {
         },
       ),
       const AnalyticsScreen(),
+      const TopicTagsScreen(),
     ];
   }
 
@@ -60,6 +62,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.analytics_outlined),
             selectedIcon: Icon(Icons.analytics),
             label: '分析',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.tag_outlined),
+            selectedIcon: Icon(Icons.tag),
+            label: '标签',
           ),
         ],
       ),
