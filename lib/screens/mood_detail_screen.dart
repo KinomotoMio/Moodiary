@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
+import '../services/storage_service.dart';
+import 'edit_mood_screen.dart';
 
 class MoodDetailScreen extends StatelessWidget {
   final MoodEntry entry;
@@ -9,6 +11,8 @@ class MoodDetailScreen extends StatelessWidget {
     super.key,
     required this.entry,
   });
+
+  StorageService get _storageService => StorageService.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -19,11 +23,15 @@ class MoodDetailScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              // TODO: 实现编辑功能
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('编辑功能正在开发中...')),
+            onPressed: () async {
+              final result = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (context) => EditMoodScreen(entry: entry),
+                ),
               );
+              if (result == true && context.mounted) {
+                Navigator.of(context).pop(true); // 返回到上一页并刷新数据
+              }
             },
             tooltip: '编辑',
           ),
@@ -326,11 +334,15 @@ class MoodDetailScreen extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {
-              // TODO: 实现编辑功能
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('编辑功能正在开发中...')),
+            onPressed: () async {
+              final result = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (context) => EditMoodScreen(entry: entry),
+                ),
               );
+              if (result == true && context.mounted) {
+                Navigator.of(context).pop(true); // 返回到上一页并刷新数据
+              }
             },
             icon: const Icon(Icons.edit_outlined),
             label: const Text('编辑记录'),
@@ -374,12 +386,28 @@ class MoodDetailScreen extends StatelessWidget {
             child: const Text('取消'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(true); // 返回 true 表示已删除
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('删除功能正在开发中...')),
-              );
+            onPressed: () async {
+              Navigator.of(context).pop(); // 关闭对话框
+              
+              // 执行删除操作
+              try {
+                await _storageService.deleteMoodEntry(entry.id);
+                if (context.mounted) {
+                  Navigator.of(context).pop(true); // 返回 true 表示已删除
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('心情记录已删除'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('删除失败: $e')),
+                  );
+                }
+              }
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,

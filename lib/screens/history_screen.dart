@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
 import '../services/storage_service.dart';
 import '../widgets/mood_card.dart';
+import 'mood_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -81,8 +82,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: MoodCard(
                           entry: entry,
-                          onTap: () {
-                            _showEntryDetails(entry);
+                          onTap: () async {
+                            final result = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (context) => MoodDetailScreen(entry: entry),
+                              ),
+                            );
+                            if (result == true) {
+                              _loadEntries(); // 如果有修改或删除，重新加载数据
+                            }
                           },
                           onDelete: () {
                             _showDeleteDialog(entry);
@@ -141,152 +149,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showEntryDetails(MoodEntry entry) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getMoodColor(entry.mood).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _getMoodColor(entry.mood).withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(
-                      entry.mood.emoji,
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.mood.displayName,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: _getMoodColor(entry.mood),
-                          ),
-                        ),
-                        Text(
-                          '情绪强度: ${entry.emotionScore}分',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text(
-                '记录时间',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _formatFullDateTime(entry.timestamp),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                '心情内容',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Text(
-                    entry.content,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      height: 1.6,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _showDeleteDialog(entry);
-                      },
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('删除'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.error,
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.close),
-                      label: const Text('关闭'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -383,26 +245,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           SnackBar(content: Text('清空失败: $e')),
         );
       }
-    }
-  }
-
-  Color _getMoodColor(MoodType mood) {
-    switch (mood) {
-      case MoodType.positive:
-        return const Color(0xFF4CAF50);
-      case MoodType.negative:
-        return const Color(0xFFFF5722);
-      case MoodType.neutral:
-        return const Color(0xFF607D8B);
-    }
-  }
-
-  String _formatFullDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    if (dateTime.year == now.year) {
-      return '${dateTime.month}月${dateTime.day}日 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${dateTime.year}年${dateTime.month}月${dateTime.day}日 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     }
   }
 }

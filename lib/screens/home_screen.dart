@@ -5,6 +5,7 @@ import '../services/storage_service.dart';
 import '../widgets/mood_card.dart';
 import 'add_mood_screen.dart';
 import 'history_screen.dart';
+import 'mood_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -394,6 +395,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: MoodCard(
                   entry: entry,
+                  onTap: () async {
+                    final result = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (context) => MoodDetailScreen(entry: entry),
+                      ),
+                    );
+                    if (result == true) {
+                      _loadData(); // 如果删除了记录，重新加载数据
+                    }
+                  },
                 ),
               ))),
       ],
