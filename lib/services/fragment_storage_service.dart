@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mood_fragment.dart';
 import '../models/mood_entry.dart';
 import '../events/app_events.dart';
+import '../utils/tag_utils.dart';
 import 'storage_service.dart';
 
 class FragmentStorageService {
@@ -23,6 +24,27 @@ class FragmentStorageService {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     await _migrateLegacyData();
+    
+    // 预热标签缓存
+    await _preloadTagCache();
+  }
+  
+  // 预热标签工具缓存
+  Future<void> _preloadTagCache() async {
+    try {
+      final fragments = await getAllFragments();
+      final contents = fragments
+          .where((f) => f.textContent != null && f.textContent!.isNotEmpty)
+          .map((f) => f.textContent!)
+          .toList();
+      
+      if (contents.isNotEmpty) {
+        TagUtils.preloadCache(contents);
+        debugPrint('TagUtils cache preloaded with ${contents.length} texts');
+      }
+    } catch (e) {
+      debugPrint('Error preloading tag cache: $e');
+    }
   }
   
   // 迁移旧数据到新的Fragment模型
@@ -78,6 +100,9 @@ class FragmentStorageService {
     }
     
     await _saveFragments(fragments);
+    
+    // 清理标签工具缓存
+    TagUtils.clearCache();
     
     // 发送事件
     final isUpdate = existingIndex != -1;
@@ -168,6 +193,9 @@ class FragmentStorageService {
     final fragments = await getAllFragments();
     fragments.removeWhere((fragment) => fragment.id == id);
     await _saveFragments(fragments);
+    
+    // 清理标签工具缓存
+    TagUtils.clearCache();
     
     // 发送事件
     StorageService.eventBus.fire(MoodEntryDeletedEvent(id));

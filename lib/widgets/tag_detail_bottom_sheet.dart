@@ -4,7 +4,7 @@ import '../models/mood_fragment.dart';
 import '../models/mood_entry.dart';
 import '../services/fragment_storage_service.dart';
 import '../widgets/highlighted_text.dart';
-import '../screens/mood_detail_screen.dart';
+import '../utils/navigation_utils.dart';
 
 class TagDetailBottomSheet extends StatefulWidget {
   final TopicTag initialTag;
@@ -79,33 +79,19 @@ class _TagDetailBottomSheetState extends State<TagDetailBottomSheet> {
 
   // 导航到心情详情页面
   void _navigateToMoodDetail(MoodFragment fragment) async {
-    final result = await Navigator.of(context).push<bool>(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => 
-          MoodDetailScreen(entry: fragment.toMoodEntry()),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // 从右滑入动画效果
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
+    final heroTag = NavigationUtils.getHeroTag(fragment.id, 'tag_detail');
+    final result = await NavigationUtils.navigateToMoodDetail(
+      context, 
+      fragment.toMoodEntry(),
+      heroTag: heroTag,
     );
 
     // 如果记录被编辑或删除，刷新当前标签的内容
-    if (result == true && mounted) {
-      await _loadFragmentsForCurrentTag();
-    }
+    NavigationUtils.handleDetailResult(result, () async {
+      if (mounted) {
+        await _loadFragmentsForCurrentTag();
+      }
+    });
   }
 
   @override
@@ -253,17 +239,23 @@ class _TagDetailBottomSheetState extends State<TagDetailBottomSheet> {
       itemCount: _currentFragments.length,
       itemBuilder: (context, index) {
         final fragment = _currentFragments[index];
+        final heroTag = NavigationUtils.getHeroTag(fragment.id, 'tag_detail');
+        
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          child: Card(
-            elevation: 2,
-            shadowColor: _getMoodColor(fragment.mood).withValues(alpha: 0.2),
-            child: InkWell(
-              onTap: () => _navigateToMoodDetail(fragment),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
+          child: Hero(
+            tag: heroTag,
+            child: Material(
+              color: Colors.transparent,
+              child: Card(
+                elevation: 2,
+                shadowColor: _getMoodColor(fragment.mood).withValues(alpha: 0.2),
+                child: InkWell(
+                  onTap: () => _navigateToMoodDetail(fragment),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -348,7 +340,9 @@ class _TagDetailBottomSheetState extends State<TagDetailBottomSheet> {
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                  ],
+                    ],
+                    ),
+                  ),
                 ),
               ),
             ),

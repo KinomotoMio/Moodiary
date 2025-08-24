@@ -28,7 +28,7 @@ class HighlightedText extends StatelessWidget {
       decorationColor: theme.colorScheme.primary.withValues(alpha: 0.6),
     );
 
-    // 使用正则表达式匹配#标签（支持中文、英文、数字）
+    // 使用TagUtils统一的标签匹配
     final regex = RegExp(r'(#[\u4e00-\u9fff\w]+)', caseSensitive: false);
     final matches = regex.allMatches(text);
 

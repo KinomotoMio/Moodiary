@@ -1,4 +1,5 @@
 import 'mood_entry.dart';
+import '../utils/tag_utils.dart';
 
 // Fragment类型 - 支持多种媒体形式
 enum FragmentType {
@@ -118,7 +119,7 @@ class MoodFragment {
       id: entry.id,
       textContent: entry.content.isEmpty ? null : entry.content,
       media: [],
-      topicTags: extractTopicTags(entry.content),
+      topicTags: TagUtils.extractTags(entry.content),
       timestamp: entry.timestamp,
       mood: entry.mood,
       emotionScore: entry.emotionScore,
@@ -140,7 +141,7 @@ class MoodFragment {
     
     // 从文本内容中提取标签
     if (textContent != null && textContent.isNotEmpty) {
-      allTags.addAll(extractTopicTags(textContent));
+      allTags.addAll(TagUtils.extractTags(textContent));
     }
     
     // 确定Fragment类型
@@ -166,22 +167,15 @@ class MoodFragment {
   }
 
   // 提取话题标签的静态方法（支持中文、英文、数字）
+  @Deprecated('Use TagUtils.extractTags instead')
   static List<String> extractTopicTags(String content) {
-    final regex = RegExp(r'#([\u4e00-\u9fff\w]+)');
-    final matches = regex.allMatches(content);
-    return matches.map((match) => match.group(1)!).toList();
+    return TagUtils.extractTags(content);
   }
 
   // 获取显示内容（不包含标签的纯净文本）
   String get displayContent {
     if (textContent == null) return '';
-    
-    // 移除话题标签，保留其他内容（支持中文、英文、数字）
-    String content = textContent!;
-    final regex = RegExp(r'#[\u4e00-\u9fff\w]+\s?');
-    content = content.replaceAll(regex, '').trim();
-    
-    return content;
+    return TagUtils.getDisplayContent(textContent!);
   }
 
   // 获取完整内容（包含标签）

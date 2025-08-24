@@ -7,6 +7,7 @@ import '../models/mood_entry.dart';
 import '../models/mood_fragment.dart';
 import '../services/fragment_storage_service.dart';
 import '../services/emotion_service.dart';
+import '../utils/tag_utils.dart';
 
 class AddMoodScreen extends StatefulWidget {
   const AddMoodScreen({super.key});
@@ -48,7 +49,7 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
     final text = _textController.text;
     setState(() {
       _characterCount = text.length;
-      _extractedTopicTags = MoodFragment.extractTopicTags(text);
+      _extractedTopicTags = TagUtils.extractTags(text);
     });
   }
 

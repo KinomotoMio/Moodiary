@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
-import '../screens/mood_detail_screen.dart';
 import '../screens/topic_tags_screen.dart';
+import '../utils/navigation_utils.dart';
 import 'highlighted_text.dart';
 
 class MoodCard extends StatelessWidget {
@@ -19,20 +19,20 @@ class MoodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shadowColor: _getMoodColor(entry.mood).withValues(alpha: 0.2),
-      child: InkWell(
-        onTap: onTap ?? () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => MoodDetailScreen(entry: entry),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        splashColor: _getMoodColor(entry.mood).withValues(alpha: 0.1),
-        highlightColor: _getMoodColor(entry.mood).withValues(alpha: 0.05),
+    final heroTag = NavigationUtils.getHeroTag(entry.id, 'mood_card');
+    
+    return Hero(
+      tag: heroTag,
+      child: Material(
+        color: Colors.transparent,
+        child: Card(
+          elevation: 2,
+          shadowColor: _getMoodColor(entry.mood).withValues(alpha: 0.2),
+          child: InkWell(
+            onTap: onTap ?? NavigationUtils.createMoodCardTapHandler(context, entry, heroTag: heroTag),
+            borderRadius: BorderRadius.circular(12),
+            splashColor: _getMoodColor(entry.mood).withValues(alpha: 0.1),
+            highlightColor: _getMoodColor(entry.mood).withValues(alpha: 0.05),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(16.0),
@@ -129,6 +129,8 @@ class MoodCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
           ),
         ),
       ),
