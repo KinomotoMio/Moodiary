@@ -5,6 +5,8 @@ import '../models/mood_entry.dart';
 import '../services/fragment_storage_service.dart';
 import '../events/app_events.dart';
 import '../services/storage_service.dart';
+import '../widgets/highlighted_text.dart';
+import '../screens/mood_detail_screen.dart';
 
 class TopicTagsScreen extends StatefulWidget {
   final String? initialSearchQuery;
@@ -463,13 +465,18 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
-                      title: Text(
-                        fragment.displayContent.isNotEmpty 
-                          ? fragment.displayContent 
-                          : '仅图片记录',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      title: fragment.textContent != null && fragment.textContent!.isNotEmpty
+                        ? HighlightedText(
+                            text: fragment.textContent!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            onTagTap: (tagName) => _onTagTapInModal(tagName),
+                          )
+                        : const Text(
+                            '仅图片记录',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                       subtitle: Text(_formatDateTime(fragment.timestamp)),
                       leading: CircleAvatar(
                         backgroundColor: _getMoodColor(fragment.mood).withValues(alpha: 0.2),
@@ -478,9 +485,19 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
                           style: const TextStyle(fontSize: 20),
                         ),
                       ),
-                      trailing: fragment.hasMedia 
-                        ? const Icon(Icons.photo_outlined)
-                        : null,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (fragment.hasMedia) 
+                            const Icon(Icons.photo_outlined, size: 16),
+                          if (fragment.hasMedia && fragment.hasTopicTags)
+                            const SizedBox(width: 4),
+                          if (fragment.hasTopicTags)
+                            Icon(Icons.tag, size: 16, color: Theme.of(context).colorScheme.primary),
+                          const Icon(Icons.chevron_right, size: 16),
+                        ],
+                      ),
+                      onTap: () => _navigateToMoodDetail(fragment),
                     ),
                   );
                 },
@@ -488,6 +505,27 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // 处理弹窗内标签点击 - 关闭当前弹窗并打开新的标签弹窗
+  void _onTagTapInModal(String tagName) {
+    Navigator.of(context).pop(); // 关闭当前弹窗
+    
+    // 查找对应的标签并显示其详情
+    final tag = _topicTags.firstWhere(
+      (t) => t.name == tagName,
+      orElse: () => TopicTag(name: tagName, firstUsed: DateTime.now(), usageCount: 0),
+    );
+    _showTagDetails(tag);
+  }
+
+  // 导航到心情详情页面
+  void _navigateToMoodDetail(MoodFragment fragment) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MoodDetailScreen(entry: fragment.toMoodEntry()),
       ),
     );
   }
