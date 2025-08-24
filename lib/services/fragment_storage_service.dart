@@ -226,6 +226,7 @@ class FragmentStorageService {
       final List<dynamic> jsonList = json.decode(jsonString);
       return jsonList
           .map((json) => TopicTag.fromJson(json))
+          .where((tag) => tag.usageCount > 0) // 过滤掉使用次数为0的标签
           .toList()
         ..sort((a, b) => b.usageCount.compareTo(a.usageCount)); // 按使用频率排序
     } catch (e) {
