@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/mood_fragment.dart';
 import '../models/mood_entry.dart';
 import '../screens/topic_tags_screen.dart';
+import '../utils/tag_utils.dart';
 import 'highlighted_text.dart';
 
 class FragmentCard extends StatelessWidget {
@@ -245,23 +246,11 @@ class FragmentCard extends StatelessWidget {
     return Wrap(
       spacing: 6,
       runSpacing: 4,
-      children: fragment.topicTags.map((tag) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Text(
-          '#$tag',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSecondaryContainer,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+      children: fragment.topicTags.map((tag) => TagUtils.createTagChip(
+        context,
+        tag,
+        onTap: () => TagUtils.navigateToTag(context, tag, source: 'fragment_card'),
+        style: TagChipStyle.small,
       )).toList(),
     );
   }

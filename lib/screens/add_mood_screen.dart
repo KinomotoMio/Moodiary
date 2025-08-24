@@ -173,14 +173,10 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
-                children: _extractedTopicTags.map((tag) => Chip(
-                  label: Text('#$tag'),
-                  avatar: const Icon(Icons.tag, size: 16),
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  labelStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontSize: 12,
-                  ),
+                children: _extractedTopicTags.map((tag) => TagUtils.createTagChip(
+                  context,
+                  tag,
+                  style: TagChipStyle.normal,
                 )).toList(),
               ),
             ],

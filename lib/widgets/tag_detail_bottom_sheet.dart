@@ -5,6 +5,7 @@ import '../models/mood_entry.dart';
 import '../services/fragment_storage_service.dart';
 import '../widgets/highlighted_text.dart';
 import '../utils/navigation_utils.dart';
+import '../utils/tag_utils.dart';
 
 class TagDetailBottomSheet extends StatefulWidget {
   final TopicTag initialTag;
@@ -181,14 +182,10 @@ class _TagDetailBottomSheetState extends State<TagDetailBottomSheet> {
               if (_canGoBack) const SizedBox(width: 12),
               
               // 当前标签芯片
-              Chip(
-                label: Text(_currentTag.name),
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                avatar: Icon(
-                  Icons.tag,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
+              TagUtils.createTagChip(
+                context,
+                _currentTag.name,
+                style: TagChipStyle.large,
               ),
               
               const Spacer(),
