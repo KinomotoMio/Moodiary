@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
 import '../services/emotion_service.dart';
+import '../models/app_settings.dart';
 import '../enums/analysis_method.dart';
 
 /// 设置页面
@@ -90,6 +91,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _buildAnalysisSection(),
                   const SizedBox(height: 24),
+                  if (_settingsService.analysisMethod == AnalysisMethod.llm) ...[
+                    _buildAIConfigSection(),
+                    const SizedBox(height: 24),
+                  ],
                   _buildDataSection(),
                   const SizedBox(height: 24),
                   _buildAboutSection(),
@@ -270,6 +275,203 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  /// AI配置区域
+  Widget _buildAIConfigSection() {
+    final currentSettings = _settingsService.currentSettings;
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.smart_toy_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'AI服务配置',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // AI服务提供商选择
+            _buildAIProviderSelector(currentSettings),
+            
+            const SizedBox(height: 16),
+            
+            // API密钥输入
+            _buildAPIKeyInput(currentSettings),
+            
+            if (currentSettings.llmProvider != null) ...[
+              const SizedBox(height: 16),
+              _buildConnectionTest(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// AI服务提供商选择器
+  Widget _buildAIProviderSelector(AppSettings currentSettings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AI服务提供商',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: currentSettings.llmProvider,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: '选择AI服务提供商',
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: 'siliconflow',
+              child: Text('SiliconFlow (推荐)'),
+            ),
+            DropdownMenuItem(
+              value: 'deepseek',
+              child: Text('DeepSeek'),
+            ),
+          ],
+          onChanged: (value) async {
+            if (value != null) {
+              final newSettings = currentSettings.copyWith(
+                llmProvider: value,
+                // 清除API密钥，需要重新输入
+                llmApiKey: null,
+              );
+              try {
+                await _settingsService.updateSettings(newSettings);
+                setState(() {});
+                _showSuccessSnackBar('AI服务提供商已更新');
+              } catch (e) {
+                _showErrorSnackBar('更新失败: $e');
+              }
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  /// API密钥输入框
+  Widget _buildAPIKeyInput(AppSettings currentSettings) {
+    final hasApiKey = currentSettings.llmApiKey?.isNotEmpty == true;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'API密钥',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: '输入API密钥',
+            suffixIcon: hasApiKey 
+              ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+              : const Icon(Icons.key_outlined),
+          ),
+          obscureText: true,
+          onChanged: (value) async {
+            if (value.isNotEmpty) {
+              final newSettings = currentSettings.copyWith(llmApiKey: value);
+              try {
+                await _settingsService.updateSettings(newSettings);
+                await _loadSettings(); // 重新加载状态
+              } catch (e) {
+                _showErrorSnackBar('保存API密钥失败: $e');
+              }
+            }
+          },
+          initialValue: hasApiKey ? '••••••••••••••••' : '',
+        ),
+        if (currentSettings.llmProvider != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _getProviderHelpText(currentSettings.llmProvider!),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// 连接测试
+  Widget _buildConnectionTest() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.wifi_outlined,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '连接测试',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Text(
+                  _strategyStatus?.statusMessage ?? '未检测',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: _strategyStatus?.isAvailable == true
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: _loadSettings,
+            child: const Text('重新测试'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 获取提供商帮助文本
+  String _getProviderHelpText(String provider) {
+    switch (provider) {
+      case 'siliconflow':
+        return '访问 api.siliconflow.cn 获取API密钥，支持多种高质量模型';
+      case 'deepseek':
+        return '访问 api.deepseek.com 获取API密钥，专注对话和推理';
+      default:
+        return '请输入有效的API密钥';
+    }
   }
 
   /// 数据管理区域
@@ -463,9 +665,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// 清除所有数据
-  void _clearAllData() {
-    // TODO: 实现清除所有数据功能
-    _showSuccessSnackBar('功能开发中，敬请期待');
+  Future<void> _clearAllData() async {
+    try {
+      // 显示加载指示器
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('正在清除数据...'),
+            ],
+          ),
+        ),
+      );
+
+      // 清除分析缓存
+      _emotionService.clearCache();
+      
+      // 重置设置到默认值
+      await _settingsService.updateSettings(AppSettings.defaultSettings());
+      
+      // TODO: 后续版本将实现清除心情记录和Fragment数据
+
+      // 关闭加载对话框
+      if (mounted) Navigator.of(context).pop();
+      
+      _showSuccessSnackBar('所有数据已清除');
+      
+      // 重新加载设置状态
+      await _loadSettings();
+      
+    } catch (e) {
+      // 关闭加载对话框
+      if (mounted) Navigator.of(context).pop();
+      _showErrorSnackBar('清除数据失败: $e');
+    }
   }
 
   /// 显示缓存统计
