@@ -2,12 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/mood_fragment.dart';
-import '../models/mood_entry.dart';
 import '../services/fragment_storage_service.dart';
 import '../events/app_events.dart';
 import '../services/storage_service.dart';
-import '../widgets/highlighted_text.dart';
-import '../screens/mood_detail_screen.dart';
+import '../widgets/tag_detail_bottom_sheet.dart';
 
 class TopicTagsScreen extends StatefulWidget {
   final String? initialSearchQuery;
@@ -503,7 +501,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
             size: 20,
           ),
         ),
-        title: Text('#${tag.name}'),
+        title: Text(tag.name),
         subtitle: Text('使用 ${tag.usageCount} 次 • 首次使用: ${_formatDate(tag.firstUsed)}'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -527,132 +525,20 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
     );
   }
 
-  void _showTagDetails(TopicTag tag) async {
-    final fragments = await _fragmentStorage.getFragmentsByTopicTag(tag.name);
-    
+  void _showTagDetails(TopicTag tag) {
     if (!mounted) return;
     
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            // 拖拽指示器
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            
-            // 标题
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                children: [
-                  Chip(
-                    label: Text('#${tag.name}'),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${fragments.length} 条记录',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // 记录列表
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                itemCount: fragments.length,
-                itemBuilder: (context, index) {
-                  final fragment = fragments[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      title: fragment.textContent != null && fragment.textContent!.isNotEmpty
-                        ? HighlightedText(
-                            text: fragment.textContent!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            onTagTap: (tagName) => _onTagTapInModal(tagName),
-                          )
-                        : const Text(
-                            '仅图片记录',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      subtitle: Text(_formatDateTime(fragment.timestamp)),
-                      leading: CircleAvatar(
-                        backgroundColor: _getMoodColor(fragment.mood).withValues(alpha: 0.2),
-                        child: Text(
-                          fragment.mood.emoji,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (fragment.hasMedia) 
-                            const Icon(Icons.photo_outlined, size: 16),
-                          if (fragment.hasMedia && fragment.hasTopicTags)
-                            const SizedBox(width: 4),
-                          if (fragment.hasTopicTags)
-                            Icon(Icons.tag, size: 16, color: Theme.of(context).colorScheme.primary),
-                          const Icon(Icons.chevron_right, size: 16),
-                        ],
-                      ),
-                      onTap: () => _navigateToMoodDetail(fragment),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+      backgroundColor: Colors.transparent,
+      builder: (context) => TagDetailBottomSheet(
+        initialTag: tag,
+        allTags: _topicTags,
       ),
     );
   }
 
-  // 处理弹窗内标签点击 - 关闭当前弹窗并打开新的标签弹窗
-  void _onTagTapInModal(String tagName) {
-    Navigator.of(context).pop(); // 关闭当前弹窗
-    
-    // 查找对应的标签并显示其详情
-    final tag = _topicTags.firstWhere(
-      (t) => t.name == tagName,
-      orElse: () => TopicTag(name: tagName, firstUsed: DateTime.now(), usageCount: 0),
-    );
-    _showTagDetails(tag);
-  }
-
-  // 导航到心情详情页面
-  void _navigateToMoodDetail(MoodFragment fragment) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => MoodDetailScreen(entry: fragment.toMoodEntry()),
-      ),
-    );
-  }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
@@ -671,27 +557,4 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
     }
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-    
-    if (difference.inDays == 0) {
-      return '今天 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
-      return '昨天 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${dateTime.month}月${dateTime.day}日 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    }
-  }
-
-  Color _getMoodColor(MoodType mood) {
-    switch (mood) {
-      case MoodType.positive:
-        return const Color(0xFF4CAF50);
-      case MoodType.negative:
-        return const Color(0xFFFF5722);
-      case MoodType.neutral:
-        return const Color(0xFF607D8B);
-    }
-  }
 }
