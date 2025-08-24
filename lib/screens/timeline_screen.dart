@@ -8,6 +8,7 @@ import '../events/app_events.dart';
 import '../utils/navigation_utils.dart';
 import '../widgets/fragment_card.dart';
 import '../services/storage_service.dart';
+import '../services/search_service.dart';
 
 /// Timeline页面 - 以时间轴形式展示用户的情绪记录流
 class TimelineScreen extends StatefulWidget {
@@ -19,11 +20,15 @@ class TimelineScreen extends StatefulWidget {
 
 class _TimelineScreenState extends State<TimelineScreen> {
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final SearchService _searchService = SearchService.instance;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   
   final Map<String, List<MoodFragment>> _fragmentsByDate = {};
+  List<MoodFragment> _allFragments = [];
   bool _isLoading = true;
-  String _selectedFilter = 'all'; // all, positive, negative, neutral
+  MoodType? _selectedMoodFilter;
+  bool _isSearchExpanded = false;
   
   // 事件监听
   late StreamSubscription _moodDataSubscription;
@@ -31,12 +36,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
     _setupEventListeners();
     _loadData();
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _moodDataSubscription.cancel();
     _scrollController.dispose();
     super.dispose();
@@ -59,7 +67,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
     try {
       final fragments = await _fragmentStorage.getAllFragments();
-      _organizeFragmentsByDate(fragments);
+      _allFragments = fragments;
+      _applyFiltersAndOrganize();
     } catch (e) {
       debugPrint('Error loading timeline data: $e');
     }
@@ -85,54 +94,44 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
   }
 
-  List<String> _getFilteredDateKeys() {
-    if (_selectedFilter == 'all') {
-      return _fragmentsByDate.keys.toList()..sort((a, b) => b.compareTo(a));
-    }
+  void _onSearchChanged() {
+    _applyFiltersAndOrganize();
+  }
 
-    final filteredDates = <String>[];
-    for (final dateKey in _fragmentsByDate.keys) {
-      final dayFragments = _fragmentsByDate[dateKey]!;
-      final hasMatchingFragments = dayFragments.any((fragment) {
-        switch (_selectedFilter) {
-          case 'positive':
-            return fragment.mood == MoodType.positive;
-          case 'negative':
-            return fragment.mood == MoodType.negative;
-          case 'neutral':
-            return fragment.mood == MoodType.neutral;
-          default:
-            return true;
-        }
+  void _applyFiltersAndOrganize() {
+    if (!mounted) return;
+
+    // 构建搜索条件
+    final criteria = SearchCriteria(
+      textQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      moodFilter: _selectedMoodFilter,
+    );
+
+    // 使用SearchService进行筛选
+    final filteredFragments = _searchService.filterFragments(_allFragments, criteria);
+
+    // 按日期重新组织
+    _organizeFragmentsByDate(filteredFragments);
+
+    if (mounted) {
+      setState(() {
+        // 触发UI重建
       });
-      
-      if (hasMatchingFragments) {
-        filteredDates.add(dateKey);
-      }
     }
-    
-    return filteredDates..sort((a, b) => b.compareTo(a));
+  }
+
+  List<String> _getFilteredDateKeys() {
+    // 直接返回已经过筛选并组织好的日期键，按时间倒序排列
+    return _fragmentsByDate.keys.toList()..sort((a, b) => b.compareTo(a));
   }
 
   List<MoodFragment> _getFilteredFragmentsForDate(String dateKey) {
-    final dayFragments = _fragmentsByDate[dateKey] ?? [];
-    
-    if (_selectedFilter == 'all') {
-      return dayFragments;
-    }
+    // 直接返回已经过筛选的当日记录
+    return _fragmentsByDate[dateKey] ?? [];
+  }
 
-    return dayFragments.where((fragment) {
-      switch (_selectedFilter) {
-        case 'positive':
-          return fragment.mood == MoodType.positive;
-        case 'negative':
-          return fragment.mood == MoodType.negative;
-        case 'neutral':
-          return fragment.mood == MoodType.neutral;
-        default:
-          return true;
-      }
-    }).toList();
+  bool _hasActiveFilters() {
+    return _selectedMoodFilter != null || _searchController.text.isNotEmpty;
   }
 
   void _navigateToMoodDetail(MoodFragment fragment) async {
@@ -158,16 +157,30 @@ class _TimelineScreenState extends State<TimelineScreen> {
         centerTitle: true,
         elevation: 0,
         actions: [
-          PopupMenuButton<String>(
-            initialValue: _selectedFilter,
+          // 搜索按钮
+          IconButton(
+            icon: Icon(_isSearchExpanded ? Icons.search_off : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearchExpanded = !_isSearchExpanded;
+                if (!_isSearchExpanded) {
+                  _searchController.clear();
+                }
+              });
+            },
+            tooltip: _isSearchExpanded ? '关闭搜索' : '搜索',
+          ),
+          PopupMenuButton<MoodType?>(
+            initialValue: _selectedMoodFilter,
             onSelected: (value) {
               setState(() {
-                _selectedFilter = value;
+                _selectedMoodFilter = value;
               });
+              _applyFiltersAndOrganize();
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'all',
+                value: null,
                 child: Row(
                   children: [
                     Icon(Icons.all_inclusive, size: 20),
@@ -177,7 +190,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ),
               const PopupMenuItem(
-                value: 'positive',
+                value: MoodType.positive,
                 child: Row(
                   children: [
                     Icon(Icons.sentiment_very_satisfied, color: Colors.green, size: 20),
@@ -187,7 +200,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ),
               const PopupMenuItem(
-                value: 'negative',
+                value: MoodType.negative,
                 child: Row(
                   children: [
                     Icon(Icons.sentiment_very_dissatisfied, color: Colors.red, size: 20),
@@ -197,7 +210,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ),
               const PopupMenuItem(
-                value: 'neutral',
+                value: MoodType.neutral,
                 child: Row(
                   children: [
                     Icon(Icons.sentiment_neutral, color: Colors.grey, size: 20),
@@ -214,7 +227,16 @@ class _TimelineScreenState extends State<TimelineScreen> {
         onRefresh: _loadData,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _buildTimelineContent(),
+            : Column(
+                children: [
+                  // 搜索框
+                  if (_isSearchExpanded) _buildSearchBox(),
+                  // 搜索结果统计
+                  if (_hasActiveFilters()) _buildSearchStats(),
+                  // 时间线内容
+                  Expanded(child: _buildTimelineContent()),
+                ],
+              ),
       ),
     );
   }
@@ -390,7 +412,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Widget _buildEmptyState() {
-    final filterText = _selectedFilter == 'all' ? '记录' : '${_getFilterDisplayName(_selectedFilter)}记录';
+    final filterText = _selectedMoodFilter == null ? '记录' : '${_selectedMoodFilter!.displayName}记录';
     
     return Center(
       child: Padding(
@@ -423,18 +445,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     );
   }
 
-  String _getFilterDisplayName(String filter) {
-    switch (filter) {
-      case 'positive':
-        return '积极';
-      case 'negative':
-        return '消极';
-      case 'neutral':
-        return '中性';
-      default:
-        return '全部';
-    }
-  }
 
   Color _getMoodColor(MoodType mood) {
     switch (mood) {
@@ -445,5 +455,120 @@ class _TimelineScreenState extends State<TimelineScreen> {
       case MoodType.neutral:
         return const Color(0xFF607D8B);
     }
+  }
+
+  Widget _buildSearchBox() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.all(16.0),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 200),
+        scale: _isSearchExpanded ? 1.0 : 0.95,
+        child: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: '搜索时间线记录...',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => _searchController.clear(),
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchStats() {
+    if (!_hasActiveFilters() || _isLoading) return const SizedBox();
+    
+    // 构建搜索条件
+    final criteria = SearchCriteria(
+      textQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      moodFilter: _selectedMoodFilter,
+    );
+
+    // 使用SearchService获取统计
+    final filteredFragments = _searchService.filterFragments(_allFragments, criteria);
+    final stats = _searchService.getSearchStats(_allFragments, filteredFragments);
+    
+    final percentage = stats.filterRatio > 0 ? (stats.filterRatio * 100).round() : 0;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.timeline,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '时间线筛选',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text(
+                '${stats.filteredCount}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              Text(
+                ' / ${stats.totalCount} 条记录',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (percentage < 100) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$percentage%',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
