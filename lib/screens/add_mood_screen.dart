@@ -7,7 +7,9 @@ import '../models/mood_entry.dart';
 import '../models/mood_fragment.dart';
 import '../services/fragment_storage_service.dart';
 import '../services/emotion_service.dart';
+import '../services/smart_tag_extractor_service.dart';
 import '../utils/tag_utils.dart';
+import '../widgets/smart_tag_suggestions.dart';
 
 class AddMoodScreen extends StatefulWidget {
   const AddMoodScreen({super.key});
@@ -20,6 +22,7 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
   final TextEditingController _textController = TextEditingController();
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final EmotionService _emotionService = EmotionService.instance;
+  final SmartTagExtractorService _smartTagExtractor = SmartTagExtractorService.instance;
   final ImagePicker _imagePicker = ImagePicker();
   
   bool _isAnalyzing = false;
@@ -31,6 +34,10 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
   // 多媒体相关
   List<XFile> _selectedImages = [];
   List<String> _extractedTopicTags = [];
+  
+  // 智能标签相关
+  SmartTagSuggestion? _smartTagSuggestion;
+  bool _isExtractingSmartTags = false;
   
   @override
   void initState() {
@@ -51,6 +58,83 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
       _characterCount = text.length;
       _extractedTopicTags = TagUtils.extractTags(text);
     });
+    
+    // 异步提取智能标签建议
+    _extractSmartTagsAsync();
+  }
+  
+  Future<void> _extractSmartTagsAsync() async {
+    final text = _textController.text.trim();
+    
+    if (text.isEmpty || text.length < 6) {
+      setState(() {
+        _smartTagSuggestion = null;
+      });
+      return;
+    }
+    
+    setState(() {
+      _isExtractingSmartTags = true;
+    });
+    
+    try {
+      final suggestion = await _smartTagExtractor.extractSmartTags(text);
+      if (mounted) {
+        setState(() {
+          _smartTagSuggestion = suggestion;
+          _isExtractingSmartTags = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error extracting smart tags: $e');
+      if (mounted) {
+        setState(() {
+          _smartTagSuggestion = null;
+          _isExtractingSmartTags = false;
+        });
+      }
+    }
+  }
+  
+  void _showSmartTagSuggestions() {
+    if (_smartTagSuggestion == null || !_smartTagSuggestion!.hasSuggestions) {
+      return;
+    }
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SmartTagSuggestionSheet(
+        suggestion: _smartTagSuggestion!,
+        onConfirm: (selectedKeywords) {
+          _applySmartTags(selectedKeywords);
+        },
+      ),
+    );
+  }
+  
+  void _applySmartTags(List<String> selectedKeywords) {
+    if (selectedKeywords.isEmpty) return;
+    
+    final originalText = _textController.text;
+    final modifiedText = _smartTagExtractor.convertKeywordsToTags(
+      originalText, 
+      selectedKeywords,
+    );
+    
+    setState(() {
+      _textController.text = modifiedText;
+      // 重新提取标签
+      _extractedTopicTags = TagUtils.extractTags(modifiedText);
+    });
+    
+    // 显示成功提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已将 ${selectedKeywords.length} 个关键词转换为标签'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
   }
 
   @override
@@ -158,6 +242,29 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
                 ),
               ],
             ),
+            
+            // 智能标签化按钮
+            if (_characterCount >= 6) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  SmartTagButton(
+                    suggestionCount: _smartTagSuggestion?.suggestionCount ?? 0,
+                    onPressed: _showSmartTagSuggestions,
+                    isLoading: _isExtractingSmartTags,
+                  ),
+                  const Spacer(),
+                  if (_smartTagSuggestion?.hasSuggestions == true)
+                    Text(
+                      '发现 ${_smartTagSuggestion!.suggestionCount} 个关键词',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+            ],
             
             // 话题标签显示
             if (_extractedTopicTags.isNotEmpty) ...[
