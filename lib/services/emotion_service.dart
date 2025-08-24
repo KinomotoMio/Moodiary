@@ -122,6 +122,49 @@ class EmotionService {
     return texts.map((text) => analyzeEmotion(text)).toList();
   }
   
+  /// 检查当前分析策略状态
+  /// 
+  /// 返回分析策略的可用性和错误信息，用于UI显示
+  Future<AnalysisStrategyStatus> getStrategyStatus() async {
+    final currentMethod = _settingsService.analysisMethod;
+    final strategy = _strategies[currentMethod]!;
+    
+    try {
+      final isAvailable = await strategy.isAvailable;
+      
+      if (isAvailable) {
+        return AnalysisStrategyStatus(
+          method: currentMethod,
+          isAvailable: true,
+          statusMessage: '${currentMethod.displayName}分析正常',
+          canFallback: false,
+        );
+      } else {
+        // 策略不可用，检查是否可以降级
+        final canFallback = currentMethod != AnalysisMethod.rule;
+        final fallbackAvailable = canFallback ? 
+          await _strategies[AnalysisMethod.rule]!.isAvailable : false;
+            
+        return AnalysisStrategyStatus(
+          method: currentMethod,
+          isAvailable: false,
+          statusMessage: canFallback && fallbackAvailable ? 
+            '${currentMethod.displayName}不可用，将使用规则分析' :
+            '${currentMethod.displayName}暂时不可用',
+          canFallback: canFallback && fallbackAvailable,
+        );
+      }
+    } catch (e) {
+      return AnalysisStrategyStatus(
+        method: currentMethod,
+        isAvailable: false,
+        statusMessage: '检查${currentMethod.displayName}状态时出错',
+        canFallback: currentMethod != AnalysisMethod.rule,
+        errorDetails: e.toString(),
+      );
+    }
+  }
+
   /// 获取情绪建议
   String getEmotionAdvice(MoodType moodType, int score) {
     switch (moodType) {
@@ -164,5 +207,36 @@ class EmotionAnalysisResult {
   @override
   String toString() {
     return 'EmotionAnalysisResult(moodType: $moodType, score: $score, confidence: ${(confidence * 100).toStringAsFixed(1)}%)';
+  }
+}
+
+/// 分析策略状态信息
+class AnalysisStrategyStatus {
+  /// 当前使用的分析方法
+  final AnalysisMethod method;
+  
+  /// 是否可用
+  final bool isAvailable;
+  
+  /// 状态描述信息
+  final String statusMessage;
+  
+  /// 是否可以降级到其他策略
+  final bool canFallback;
+  
+  /// 错误详细信息（可选）
+  final String? errorDetails;
+
+  const AnalysisStrategyStatus({
+    required this.method,
+    required this.isAvailable,
+    required this.statusMessage,
+    required this.canFallback,
+    this.errorDetails,
+  });
+
+  @override
+  String toString() {
+    return 'AnalysisStrategyStatus(method: $method, available: $isAvailable, message: $statusMessage)';
   }
 }
