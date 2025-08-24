@@ -165,9 +165,9 @@ class MoodFragment {
     );
   }
 
-  // 提取话题标签的静态方法
+  // 提取话题标签的静态方法（支持中文、英文、数字）
   static List<String> extractTopicTags(String content) {
-    final regex = RegExp(r'#(\w+)');
+    final regex = RegExp(r'#([\u4e00-\u9fff\w]+)');
     final matches = regex.allMatches(content);
     return matches.map((match) => match.group(1)!).toList();
   }
@@ -176,9 +176,9 @@ class MoodFragment {
   String get displayContent {
     if (textContent == null) return '';
     
-    // 移除话题标签，保留其他内容
+    // 移除话题标签，保留其他内容（支持中文、英文、数字）
     String content = textContent!;
-    final regex = RegExp(r'#\w+\s?');
+    final regex = RegExp(r'#[\u4e00-\u9fff\w]+\s?');
     content = content.replaceAll(regex, '').trim();
     
     return content;

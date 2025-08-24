@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
 import '../screens/mood_detail_screen.dart';
+import '../screens/topic_tags_screen.dart';
+import 'highlighted_text.dart';
 
 class MoodCard extends StatelessWidget {
   final MoodEntry entry;
@@ -110,16 +112,14 @@ class MoodCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+              HighlightedText(
+                text: entry.content,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   height: 1.4,
                 ),
-                child: Text(
-                  entry.content,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                onTagTap: (tagName) => _navigateToTagsScreen(context, tagName),
               ),
               const SizedBox(height: 8),
               Text(
@@ -183,6 +183,15 @@ class MoodCard extends StatelessWidget {
     } else {
       return const Color(0xFFFF5722); // 红色 - 低分
     }
+  }
+
+  // 导航到标签页面并筛选特定标签
+  void _navigateToTagsScreen(BuildContext context, String tagName) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TopicTagsScreen(initialSearchQuery: tagName),
+      ),
+    );
   }
 
   String _formatDateTime(DateTime dateTime) {

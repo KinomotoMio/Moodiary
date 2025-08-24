@@ -7,7 +7,12 @@ import '../events/app_events.dart';
 import '../services/storage_service.dart';
 
 class TopicTagsScreen extends StatefulWidget {
-  const TopicTagsScreen({super.key});
+  final String? initialSearchQuery;
+  
+  const TopicTagsScreen({
+    super.key,
+    this.initialSearchQuery,
+  });
 
   @override
   State<TopicTagsScreen> createState() => _TopicTagsScreenState();
@@ -15,6 +20,7 @@ class TopicTagsScreen extends StatefulWidget {
 
 class _TopicTagsScreenState extends State<TopicTagsScreen> {
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final TextEditingController _searchController = TextEditingController();
   List<TopicTag> _topicTags = [];
   bool _isLoading = true;
   String _searchQuery = '';
@@ -25,6 +31,13 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // 设置初始搜索查询
+    if (widget.initialSearchQuery != null) {
+      _searchQuery = widget.initialSearchQuery!;
+      _searchController.text = _searchQuery;
+    }
+    
     _setupEventListeners();
     _loadData();
   }
@@ -39,6 +52,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _moodDataSubscription.cancel();
     super.dispose();
   }
@@ -105,6 +119,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
+              controller: _searchController,
               decoration: InputDecoration(
                 hintText: '搜索话题标签...',
                 prefixIcon: const Icon(Icons.search),
