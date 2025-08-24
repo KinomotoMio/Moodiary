@@ -149,6 +149,53 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
   }
 
+  void _showDeleteDialog(MoodFragment fragment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除记录'),
+        content: const Text('确定要删除这条心情记录吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteFragment(fragment);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteFragment(MoodFragment fragment) async {
+    try {
+      await _fragmentStorage.deleteFragment(fragment.id);
+      await _loadData(); // 重新加载数据并重新筛选组织
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('记录已删除')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('删除失败: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -401,6 +448,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   child: FragmentCard(
                     fragment: fragment,
                     onTap: () => _navigateToMoodDetail(fragment),
+                    onDelete: () => _showDeleteDialog(fragment),
                   ),
                 ),
               ),
