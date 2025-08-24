@@ -9,6 +9,7 @@ import '../widgets/fragment_card.dart';
 import '../events/app_events.dart';
 import 'add_mood_screen.dart';
 import 'mood_detail_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -199,6 +200,14 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         elevation: 0,
         actions: [
+          // 设置按钮
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+            ),
+            tooltip: '设置',
+          ),
           // 临时：添加测试数据按钮  
           IconButton(
             icon: const Icon(Icons.data_array),
