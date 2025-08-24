@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_entry.dart';
 import '../services/fragment_storage_service.dart';
+import '../widgets/highlighted_text.dart';
+import '../screens/topic_tags_screen.dart';
 import 'edit_mood_screen.dart';
 
 class MoodDetailScreen extends StatelessWidget {
@@ -13,6 +15,15 @@ class MoodDetailScreen extends StatelessWidget {
   });
 
   FragmentStorageService get _fragmentStorage => FragmentStorageService.instance;
+
+  // 导航到标签页面并筛选特定标签
+  void _navigateToTagsScreen(BuildContext context, String tagName) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TopicTagsScreen(initialSearchQuery: tagName),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -316,11 +327,12 @@ class MoodDetailScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                 ),
               ),
-              child: Text(
-                entry.content,
+              child: HighlightedText(
+                text: entry.content,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   height: 1.6,
                 ),
+                onTagTap: (tagName) => _navigateToTagsScreen(context, tagName),
               ),
             ),
           ],
