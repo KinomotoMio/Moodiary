@@ -23,6 +23,11 @@ class EmotionService {
     AnalysisMethod.local: LocalAIStrategy(),
   };
 
+  // 分析结果缓存
+  final Map<String, CachedAnalysisResult> _cache = {};
+  static const int _maxCacheSize = 100;
+  static const Duration _cacheExpiry = Duration(hours: 24);
+
   /// 获取当前配置的分析策略
   AnalysisStrategy get _currentStrategy {
     final method = _settingsService.analysisMethod;
@@ -33,27 +38,46 @@ class EmotionService {
   /// 
   /// 根据用户设置自动选择合适的分析策略
   /// 支持优雅降级：AI分析失败时自动回退到规则分析
+  /// 支持结果缓存：相同内容和策略的分析结果会被缓存
   Future<AnalysisResult> analyzeEmotionUnified(String content) async {
     if (content.trim().isEmpty) {
       return AnalysisResult.neutral();
     }
 
+    final currentMethod = _settingsService.analysisMethod;
+    final cacheKey = _generateCacheKey(content, currentMethod);
+
+    // 检查缓存
+    final cached = _getFromCache(cacheKey);
+    if (cached != null) {
+      if (kDebugMode) {
+        debugPrint('Using cached result for analysis');
+      }
+      return cached;
+    }
+
     try {
       final strategy = _currentStrategy;
+      AnalysisResult result;
       
       // 检查策略是否可用
       if (await strategy.isAvailable) {
         if (kDebugMode) {
           debugPrint('Using ${strategy.strategyName} for emotion analysis');
         }
-        return await strategy.analyze(content);
+        result = await strategy.analyze(content);
       } else {
         if (kDebugMode) {
           debugPrint('${strategy.strategyName} not available, falling back to rule-based');
         }
         // 降级到规则分析
-        return await _strategies[AnalysisMethod.rule]!.analyze(content);
+        result = await _strategies[AnalysisMethod.rule]!.analyze(content);
       }
+
+      // 缓存结果（只缓存成功的分析结果）
+      _addToCache(cacheKey, result);
+      return result;
+
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Analysis failed with ${_currentStrategy.strategyName}: $e');
@@ -65,7 +89,11 @@ class EmotionService {
           if (kDebugMode) {
             debugPrint('Falling back to rule-based analysis');
           }
-          return await _strategies[AnalysisMethod.rule]!.analyze(content);
+          final fallbackResult = await _strategies[AnalysisMethod.rule]!.analyze(content);
+          
+          // 缓存降级结果
+          _addToCache(cacheKey, fallbackResult);
+          return fallbackResult;
         } catch (fallbackError) {
           if (kDebugMode) {
             debugPrint('Fallback analysis also failed: $fallbackError');
@@ -77,6 +105,94 @@ class EmotionService {
         return AnalysisResult.neutral();
       }
     }
+  }
+
+  /// 生成缓存键
+  String _generateCacheKey(String content, AnalysisMethod method) {
+    // 使用内容和方法生成唯一键，对长内容进行hash
+    final contentKey = content.length > 100 ? 
+      content.hashCode.toString() : 
+      content.toLowerCase().trim();
+    return '${method.name}_$contentKey';
+  }
+
+  /// 从缓存获取结果
+  AnalysisResult? _getFromCache(String key) {
+    final cached = _cache[key];
+    if (cached == null) return null;
+
+    // 检查是否过期
+    if (DateTime.now().isAfter(cached.expiry)) {
+      _cache.remove(key);
+      return null;
+    }
+
+    return cached.result;
+  }
+
+  /// 添加到缓存
+  void _addToCache(String key, AnalysisResult result) {
+    // 如果缓存已满，移除最旧的条目
+    if (_cache.length >= _maxCacheSize) {
+      _evictOldestCacheEntry();
+    }
+
+    _cache[key] = CachedAnalysisResult(
+      result: result,
+      expiry: DateTime.now().add(_cacheExpiry),
+    );
+
+    if (kDebugMode) {
+      debugPrint('Cached analysis result, cache size: ${_cache.length}');
+    }
+  }
+
+  /// 清除过期的缓存条目
+  void _evictOldestCacheEntry() {
+    if (_cache.isEmpty) return;
+
+    // 找到最旧的条目
+    String? oldestKey;
+    DateTime? oldestTime;
+
+    for (final entry in _cache.entries) {
+      if (oldestTime == null || entry.value.expiry.isBefore(oldestTime)) {
+        oldestTime = entry.value.expiry;
+        oldestKey = entry.key;
+      }
+    }
+
+    if (oldestKey != null) {
+      _cache.remove(oldestKey);
+    }
+  }
+
+  /// 清除所有缓存
+  void clearCache() {
+    _cache.clear();
+    if (kDebugMode) {
+      debugPrint('Analysis cache cleared');
+    }
+  }
+
+  /// 获取缓存统计信息
+  Map<String, dynamic> getCacheStats() {
+    final now = DateTime.now();
+    int expiredCount = 0;
+    
+    for (final cached in _cache.values) {
+      if (now.isAfter(cached.expiry)) {
+        expiredCount++;
+      }
+    }
+
+    return {
+      'totalEntries': _cache.length,
+      'expiredEntries': expiredCount,
+      'validEntries': _cache.length - expiredCount,
+      'maxSize': _maxCacheSize,
+      'cacheHitRate': '需要统计', // 后续可以添加统计功能
+    };
   }
   
   /// 向后兼容的分析方法
@@ -97,23 +213,132 @@ class EmotionService {
   }
   
   /// 批量分析多条文本（新版本，使用统一接口）
+  /// 
+  /// 支持智能批量处理：
+  /// - 优先检查缓存，避免重复分析
+  /// - LLM策略支持真正的批量API调用
+  /// - 并发处理提升性能
   Future<List<AnalysisResult>> analyzeEmotionsUnified(List<String> texts) async {
+    if (texts.isEmpty) return [];
+
     final results = <AnalysisResult>[];
+    final uncachedTexts = <String>[];
+    final uncachedIndices = <int>[];
     
-    for (final text in texts) {
-      try {
-        final result = await analyzeEmotionUnified(text);
-        results.add(result);
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('Batch analysis failed for text: ${text.substring(0, 20)}..., error: $e');
-        }
-        // 添加中性结果，避免中断整个批量分析
+    final currentMethod = _settingsService.analysisMethod;
+
+    // 第一步：检查缓存，收集未缓存的文本
+    for (int i = 0; i < texts.length; i++) {
+      final text = texts[i];
+      if (text.trim().isEmpty) {
         results.add(AnalysisResult.neutral());
+        continue;
+      }
+
+      final cacheKey = _generateCacheKey(text, currentMethod);
+      final cached = _getFromCache(cacheKey);
+      
+      if (cached != null) {
+        results.add(cached);
+      } else {
+        // 占位，稍后填充
+        results.add(AnalysisResult.neutral());
+        uncachedTexts.add(text);
+        uncachedIndices.add(i);
       }
     }
-    
+
+    if (uncachedTexts.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('All ${texts.length} texts found in cache');
+      }
+      return results;
+    }
+
+    if (kDebugMode) {
+      debugPrint('Processing ${uncachedTexts.length} uncached texts out of ${texts.length}');
+    }
+
+    try {
+      final strategy = _currentStrategy;
+      List<AnalysisResult> uncachedResults;
+
+      // 第二步：批量分析未缓存的文本
+      if (strategy is LLMAnalysisStrategy && uncachedTexts.length > 1) {
+        // LLM策略支持批量分析
+        if (await strategy.isAvailable) {
+          try {
+            uncachedResults = await strategy.analyzeBatch(uncachedTexts);
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('LLM batch analysis failed: $e, falling back to individual');
+            }
+            // 降级到逐个分析
+            uncachedResults = await _processIndividually(uncachedTexts);
+          }
+        } else {
+          // LLM不可用，使用规则分析
+          uncachedResults = await _processIndividually(uncachedTexts, forceRule: true);
+        }
+      } else {
+        // 规则分析或单个文本，使用并发个别分析
+        uncachedResults = await _processIndividually(uncachedTexts);
+      }
+
+      // 第三步：填充结果并更新缓存
+      for (int i = 0; i < uncachedResults.length; i++) {
+        final resultIndex = uncachedIndices[i];
+        final result = uncachedResults[i];
+        results[resultIndex] = result;
+
+        // 缓存成功的分析结果
+        final cacheKey = _generateCacheKey(uncachedTexts[i], currentMethod);
+        _addToCache(cacheKey, result);
+      }
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Batch analysis failed: $e');
+      }
+      
+      // 错误情况下，将所有未缓存的位置设置为中性结果
+      for (final index in uncachedIndices) {
+        results[index] = AnalysisResult.neutral();
+      }
+    }
+
     return results;
+  }
+
+  /// 并发处理个别文本分析
+  Future<List<AnalysisResult>> _processIndividually(
+    List<String> texts, {
+    bool forceRule = false,
+  }) async {
+    if (texts.isEmpty) return [];
+
+    // 简单的并发处理，避免递归调用
+    final futures = texts.map((text) {
+      if (forceRule) {
+        return _strategies[AnalysisMethod.rule]!.analyze(text);
+      } else {
+        // 直接调用策略分析，避免递归
+        return _currentStrategy.analyze(text).catchError((_) {
+          // 失败时降级到规则分析
+          return _strategies[AnalysisMethod.rule]!.analyze(text);
+        });
+      }
+    }).toList();
+
+    try {
+      return await Future.wait(futures);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Concurrent analysis failed: $e');
+      }
+      // 返回中性结果
+      return List.filled(texts.length, AnalysisResult.neutral());
+    }
   }
 
   /// 向后兼容的批量分析
@@ -239,4 +464,17 @@ class AnalysisStrategyStatus {
   String toString() {
     return 'AnalysisStrategyStatus(method: $method, available: $isAvailable, message: $statusMessage)';
   }
+}
+
+/// 缓存的分析结果
+class CachedAnalysisResult {
+  final AnalysisResult result;
+  final DateTime expiry;
+
+  const CachedAnalysisResult({
+    required this.result,
+    required this.expiry,
+  });
+
+  bool get isExpired => DateTime.now().isAfter(expiry);
 }

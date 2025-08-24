@@ -605,9 +605,14 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
     });
 
     try {
-      final result = _emotionService.analyzeEmotion(_textController.text.trim());
+      final result = await _emotionService.analyzeEmotionUnified(_textController.text.trim());
       setState(() {
-        _analysisResult = result;
+        // 转换为旧的结果格式以保持UI兼容
+        _analysisResult = EmotionAnalysisResult(
+          moodType: result.moodType,
+          score: result.emotionScore,
+          confidence: result.confidence ?? 0.5,
+        );
       });
     } catch (e) {
       if (mounted) {
