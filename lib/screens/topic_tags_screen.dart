@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/mood_fragment.dart';
 import '../models/mood_entry.dart';
@@ -341,28 +342,151 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
+                alignment: WrapAlignment.center,
                 children: popularTags.map((tag) {
-                  final maxUsage = _topicTags.first.usageCount;
-                  final size = 12.0 + (tag.usageCount / maxUsage) * 8.0;
-                  
-                  return GestureDetector(
-                    onTap: () => _showTagDetails(tag),
-                    child: Chip(
-                      label: Text(
-                        '#${tag.name}',
-                        style: TextStyle(fontSize: size),
-                      ),
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(
-                        alpha: 0.3 + (tag.usageCount / maxUsage) * 0.7,
-                      ),
-                      side: BorderSide.none,
-                    ),
-                  );
+                  return _buildTagCloudChip(tag, popularTags);
                 }).toList(),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // 构建标签云中的单个标签芯片
+  Widget _buildTagCloudChip(TopicTag tag, List<TopicTag> allTags) {
+    if (allTags.isEmpty) return const SizedBox();
+    
+    final maxUsage = allTags.first.usageCount;
+    final minUsage = allTags.last.usageCount;
+    
+    // 使用对数刻度计算字体大小，让差异更明显
+    final minSize = 14.0;
+    final maxSize = 26.0;
+    final normalizedValue = minUsage == maxUsage 
+        ? 1.0 
+        : (math.log(tag.usageCount) - math.log(minUsage)) / 
+          (math.log(maxUsage) - math.log(minUsage));
+    final fontSize = minSize + (maxSize - minSize) * normalizedValue;
+    
+    // 计算颜色强度（基于频率百分位，从浅到深）
+    final percentile = tag.usageCount / maxUsage;
+    
+    // 基于主题色的深浅渐变色系
+    final theme = Theme.of(context);
+    Color chipColor;
+    Color textColor;
+    
+    if (percentile >= 0.8) {
+      // 最高频：主色，深色
+      chipColor = theme.colorScheme.primary;
+      textColor = theme.colorScheme.onPrimary;
+    } else if (percentile >= 0.6) {
+      // 高频：主色容器，较深
+      chipColor = theme.colorScheme.primaryContainer;
+      textColor = theme.colorScheme.onPrimaryContainer;
+    } else if (percentile >= 0.4) {
+      // 中频：次要色容器，中等
+      chipColor = theme.colorScheme.secondaryContainer;
+      textColor = theme.colorScheme.onSecondaryContainer;
+    } else if (percentile >= 0.2) {
+      // 低频：表面变体，较浅
+      chipColor = theme.colorScheme.surfaceContainerHigh;
+      textColor = theme.colorScheme.onSurface;
+    } else {
+      // 最低频：表面容器，最浅
+      chipColor = theme.colorScheme.surfaceContainer;
+      textColor = theme.colorScheme.onSurface.withValues(alpha: 0.7);
+    }
+    
+    // 高频标签添加渐变效果
+    final isHighFrequency = percentile > 0.7;
+    
+    return GestureDetector(
+      onTap: () => _showTagDetails(tag),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: isHighFrequency 
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    chipColor,
+                    chipColor.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: chipColor.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '#${tag.name}',
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: textColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${tag.usageCount}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Chip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '#${tag.name}',
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${tag.usageCount}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: textColor.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: chipColor,
+              side: BorderSide.none,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
       ),
     );
   }
