@@ -125,6 +125,19 @@ class AnalysisResult {
     );
   }
 
+  /// 创建中性分析结果（用于错误或空内容场景）
+  factory AnalysisResult.neutral() {
+    return AnalysisResult(
+      moodType: MoodType.neutral,
+      emotionScore: 50,
+      extractedTags: [],
+      reasoning: null,
+      analysisMethod: 'fallback',
+      timestamp: DateTime.now(),
+      confidence: 0.5,
+    );
+  }
+
   /// 获取简化的情绪描述
   String get moodDescription {
     final intensity = emotionScore > 70 ? '很' : emotionScore > 30 ? '较' : '有些';

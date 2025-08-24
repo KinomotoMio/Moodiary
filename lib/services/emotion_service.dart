@@ -1,138 +1,128 @@
+import 'package:flutter/foundation.dart';
 import '../models/mood_entry.dart';
+import '../models/analysis_result.dart';
+import '../enums/analysis_method.dart';
+import 'analysis/analysis_strategy.dart';
+import 'analysis/rule_based_strategy.dart';
+import 'analysis/llm_analysis_strategy.dart';
+import 'analysis/local_ai_strategy.dart';
+import 'settings_service.dart';
 
 class EmotionService {
   static EmotionService? _instance;
   static EmotionService get instance => _instance ??= EmotionService._();
   
   EmotionService._();
+
+  final SettingsService _settingsService = SettingsService.instance;
   
-  // MVP阶段的基础情绪分析 - 使用关键词匹配
-  // TODO: 后期可替换为AI API调用
-  EmotionAnalysisResult analyzeEmotion(String text) {
-    final cleanText = text.toLowerCase().trim();
-    
-    if (cleanText.isEmpty) {
-      return EmotionAnalysisResult(
-        moodType: MoodType.neutral,
-        score: 50,
-        confidence: 0.5,
-      );
+  // 策略实例缓存
+  final Map<AnalysisMethod, AnalysisStrategy> _strategies = {
+    AnalysisMethod.rule: RuleBasedStrategy(),
+    AnalysisMethod.llm: LLMAnalysisStrategy(),
+    AnalysisMethod.local: LocalAIStrategy(),
+  };
+
+  /// 获取当前配置的分析策略
+  AnalysisStrategy get _currentStrategy {
+    final method = _settingsService.analysisMethod;
+    return _strategies[method] ?? _strategies[AnalysisMethod.rule]!;
+  }
+
+  /// 统一的情绪分析入口
+  /// 
+  /// 根据用户设置自动选择合适的分析策略
+  /// 支持优雅降级：AI分析失败时自动回退到规则分析
+  Future<AnalysisResult> analyzeEmotionUnified(String content) async {
+    if (content.trim().isEmpty) {
+      return AnalysisResult.neutral();
     }
-    
-    // 情绪关键词词典 - MVP阶段简化版
-    final emotionKeywords = {
-      MoodType.positive: [
-        '开心', '快乐', '高兴', '兴奋', '满意', '幸福', '愉快', '舒服', '棒', '好', '爱',
-        '成功', '胜利', '完美', '美好', '温暖', '感动', '骄傲', '自豪', '满足', '放松',
-        '哈哈', '嘻嘻', '😊', '😄', '😍', '🥰', '😘', '🤩', '😋', '😌'
-      ],
-      MoodType.negative: [
-        '难过', '悲伤', '失望', '沮丧', '痛苦', '伤心', '哭', '泪', '累', '烦', '恨',
-        '愤怒', '生气', '愤慨', '讨厌', '焦虑', '紧张', '害怕', '恐惧', '担心', '压力',
-        '糟糕', '坏', '差', '失败', '挫折', '孤独', '空虚', '无聊', '郁闷', '抑郁',
-        '😢', '😭', '😔', '😞', '😟', '😧', '😨', '😰', '😱', '🙄', '😤', '😠', '😡'
-      ],
-      MoodType.neutral: [
-        '平静', '平常', '一般', '还好', '普通', '正常', '平淡', '无感', '中性',
-        '😐', '😑', '🙂'
-      ],
-    };
-    
-    // 计算各种情绪的得分
-    final scores = <MoodType, double>{};
-    
-    for (final mood in MoodType.values) {
-      final keywords = emotionKeywords[mood] ?? [];
-      int matchCount = 0;
-      double intensitySum = 0.0;
+
+    try {
+      final strategy = _currentStrategy;
       
-      for (final keyword in keywords) {
-        if (cleanText.contains(keyword)) {
-          matchCount++;
-          // 根据关键词长度和位置给予不同权重
-          final weight = keyword.length > 2 ? 1.5 : 1.0;
-          intensitySum += weight;
+      // 检查策略是否可用
+      if (await strategy.isAvailable) {
+        if (kDebugMode) {
+          debugPrint('Using ${strategy.strategyName} for emotion analysis');
         }
+        return await strategy.analyze(content);
+      } else {
+        if (kDebugMode) {
+          debugPrint('${strategy.strategyName} not available, falling back to rule-based');
+        }
+        // 降级到规则分析
+        return await _strategies[AnalysisMethod.rule]!.analyze(content);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Analysis failed with ${_currentStrategy.strategyName}: $e');
       }
       
-      if (matchCount > 0) {
-        // 基础得分 + 强度加成
-        scores[mood] = (matchCount * 10.0) + (intensitySum * 5.0);
+      // 如果当前不是规则分析，则降级到规则分析
+      if (_settingsService.analysisMethod != AnalysisMethod.rule) {
+        try {
+          if (kDebugMode) {
+            debugPrint('Falling back to rule-based analysis');
+          }
+          return await _strategies[AnalysisMethod.rule]!.analyze(content);
+        } catch (fallbackError) {
+          if (kDebugMode) {
+            debugPrint('Fallback analysis also failed: $fallbackError');
+          }
+          return AnalysisResult.neutral();
+        }
       } else {
-        scores[mood] = 0.0;
+        // 规则分析也失败了，返回中性结果
+        return AnalysisResult.neutral();
       }
     }
-    
-    // 找出得分最高的情绪类型
-    MoodType dominantMood = MoodType.neutral;
-    double maxScore = scores[MoodType.neutral] ?? 0.0;
-    
-    for (final entry in scores.entries) {
-      if (entry.value > maxScore) {
-        maxScore = entry.value;
-        dominantMood = entry.key;
-      }
-    }
-    
-    // 计算置信度和情绪强度
-    final totalScore = scores.values.reduce((a, b) => a + b);
-    final confidence = totalScore > 0 ? (maxScore / totalScore).clamp(0.0, 1.0) : 0.5;
-    
-    // 根据情绪类型和文本特征计算0-100的情绪强度
-    int emotionScore = _calculateEmotionScore(cleanText, dominantMood, maxScore);
+  }
+  
+  /// 向后兼容的分析方法
+  /// 
+  /// 保留原有接口，仅用于规则分析（同步调用）
+  /// 新代码应使用analyzeEmotionUnified方法
+  @Deprecated('Use analyzeEmotionUnified for better AI analysis support')
+  EmotionAnalysisResult analyzeEmotion(String text) {
+    // 直接使用规则分析策略，保持同步调用兼容性
+    final ruleStrategy = _strategies[AnalysisMethod.rule] as RuleBasedStrategy;
+    final result = ruleStrategy.analyzeSync(text);
     
     return EmotionAnalysisResult(
-      moodType: dominantMood,
-      score: emotionScore,
-      confidence: confidence,
+      moodType: result.moodType,
+      score: result.emotionScore,
+      confidence: result.confidence ?? 0.5,
     );
   }
   
-  // 计算情绪强度评分 (0-100)
-  int _calculateEmotionScore(String text, MoodType moodType, double rawScore) {
-    // 基础分数
-    int baseScore = 50;
+  /// 批量分析多条文本（新版本，使用统一接口）
+  Future<List<AnalysisResult>> analyzeEmotionsUnified(List<String> texts) async {
+    final results = <AnalysisResult>[];
     
-    // 根据情绪极性调整
-    switch (moodType) {
-      case MoodType.positive:
-        baseScore = 70;
-        break;
-      case MoodType.negative:
-        baseScore = 30;
-        break;
-      case MoodType.neutral:
-        baseScore = 50;
-        break;
-    }
-    
-    // 根据原始得分调整强度
-    final intensityAdjustment = (rawScore / 10.0).clamp(-20.0, 20.0).round();
-    
-    // 根据文本长度调整（更长的文本可能包含更多情绪表达）
-    final lengthAdjustment = (text.length / 50.0).clamp(-5.0, 10.0).round();
-    
-    // 检查强烈情绪表达
-    final strongEmotions = ['非常', '特别', '超级', '极其', '超', '巨', '！！', '...'];
-    int strongEmotionBonus = 0;
-    for (final strong in strongEmotions) {
-      if (text.contains(strong)) {
-        strongEmotionBonus += 5;
+    for (final text in texts) {
+      try {
+        final result = await analyzeEmotionUnified(text);
+        results.add(result);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Batch analysis failed for text: ${text.substring(0, 20)}..., error: $e');
+        }
+        // 添加中性结果，避免中断整个批量分析
+        results.add(AnalysisResult.neutral());
       }
     }
     
-    final finalScore = (baseScore + intensityAdjustment + lengthAdjustment + strongEmotionBonus)
-        .clamp(0, 100);
-        
-    return finalScore;
+    return results;
   }
-  
-  // 批量分析多条文本
+
+  /// 向后兼容的批量分析
+  @Deprecated('Use analyzeEmotionsUnified for better AI analysis support')
   Future<List<EmotionAnalysisResult>> analyzeEmotions(List<String> texts) async {
     return texts.map((text) => analyzeEmotion(text)).toList();
   }
   
-  // 获取情绪建议
+  /// 获取情绪建议
   String getEmotionAdvice(MoodType moodType, int score) {
     switch (moodType) {
       case MoodType.positive:
