@@ -194,6 +194,9 @@ class FragmentStorageService {
     fragments.removeWhere((fragment) => fragment.id == id);
     await _saveFragments(fragments);
     
+    // 重新计算标签统计
+    await _updateTopicTags(fragments);
+    
     // 清理标签工具缓存
     TagUtils.clearCache();
     
