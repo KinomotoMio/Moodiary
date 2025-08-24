@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'timeline_screen.dart';
 import 'history_screen.dart';
 import 'analytics_screen.dart';
 import 'topic_tags_screen.dart';
@@ -21,6 +22,7 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _screens = [
       const HomeScreen(),
+      const TimelineScreen(),
       HistoryScreen(
         onNavigateToHome: () {
           setState(() {
@@ -52,6 +54,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: '首页',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.timeline_outlined),
+            selectedIcon: Icon(Icons.timeline),
+            label: '时间线',
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),

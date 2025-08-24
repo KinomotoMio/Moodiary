@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../utils/tag_utils.dart';
 
 /// 统一的标签显示组件
@@ -299,5 +300,3 @@ class TagStatsDisplay extends StatelessWidget {
   }
 }
 
-// 需要导入手势识别器
-import 'package:flutter/gestures.dart';
