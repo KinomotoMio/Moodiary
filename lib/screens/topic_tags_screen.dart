@@ -22,9 +22,18 @@ class TopicTagsScreen extends StatefulWidget {
 class _TopicTagsScreenState extends State<TopicTagsScreen> {
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final TextEditingController _searchController = TextEditingController();
-  List<TopicTag> _topicTags = [];
+  final ScrollController _scrollController = ScrollController();
+  
+  List<TopicTag> _allTopicTags = [];
+  List<TopicTag> _displayedTags = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String _searchQuery = '';
+  
+  // 分页配置
+  static const int _itemsPerPage = 20;
+  int _currentPage = 0;
+  bool _hasMoreItems = true;
   
   // 事件监听
   late StreamSubscription _moodDataSubscription;
@@ -40,7 +49,18 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
     }
     
     _setupEventListeners();
+    _setupScrollController();
     _loadData();
+  }
+  
+  void _setupScrollController() {
+    _scrollController.addListener(() {
+      // 检查是否接近底部，提前加载更多数据
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        _loadMoreData();
+      }
+    });
   }
   
   void _setupEventListeners() {
@@ -54,6 +74,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     _moodDataSubscription.cancel();
     super.dispose();
   }
@@ -61,26 +82,92 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
+      _currentPage = 0;
+      _hasMoreItems = true;
     });
 
     try {
-      _topicTags = await _fragmentStorage.getAllTopicTags();
+      _allTopicTags = await _fragmentStorage.getAllTopicTags();
+      _loadInitialPageData();
     } catch (e) {
       debugPrint('Error loading topic tags: $e');
+      _allTopicTags = [];
     }
 
     setState(() {
       _isLoading = false;
     });
   }
-
-  List<TopicTag> get _filteredTags {
-    if (_searchQuery.isEmpty) return _topicTags;
+  
+  void _loadInitialPageData() {
+    final filteredTags = _getFilteredTags();
+    final endIndex = _itemsPerPage;
     
-    return _topicTags.where((tag) {
+    if (endIndex >= filteredTags.length) {
+      _displayedTags = filteredTags;
+      _hasMoreItems = false;
+    } else {
+      _displayedTags = filteredTags.take(endIndex).toList();
+      _hasMoreItems = true;
+    }
+    
+    _currentPage = 1;
+  }
+  
+  Future<void> _loadMoreData() async {
+    if (_isLoadingMore || !_hasMoreItems || _isLoading) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    // 模拟网络延迟，使加载更真实
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    try {
+      final filteredTags = _getFilteredTags();
+      final startIndex = _currentPage * _itemsPerPage;
+      final endIndex = startIndex + _itemsPerPage;
+      
+      if (startIndex >= filteredTags.length) {
+        _hasMoreItems = false;
+      } else {
+        final newItems = filteredTags.skip(startIndex).take(_itemsPerPage).toList();
+        _displayedTags.addAll(newItems);
+        _currentPage++;
+        
+        if (endIndex >= filteredTags.length) {
+          _hasMoreItems = false;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading more tags: $e');
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+  
+  List<TopicTag> _getFilteredTags() {
+    if (_searchQuery.isEmpty) return _allTopicTags;
+    
+    return _allTopicTags.where((tag) {
       return tag.name.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
   }
+  
+  void _onSearchChanged() {
+    // 重新计算显示的标签（重置分页）
+    setState(() {
+      _currentPage = 0;
+      _hasMoreItems = true;
+    });
+    _loadInitialPageData();
+  }
+
 
   // 临时：重建标签统计的方法
   Future<void> _rebuildTagsStatistics() async {
@@ -135,6 +222,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
                 setState(() {
                   _searchQuery = value;
                 });
+                _onSearchChanged();
               },
             ),
           ),
@@ -147,15 +235,14 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
   }
 
   Widget _buildBody() {
-    final filteredTags = _filteredTags;
-    
-    if (filteredTags.isEmpty) {
+    if (_displayedTags.isEmpty && !_isLoading) {
       return _buildEmptyState();
     }
 
     return RefreshIndicator(
       onRefresh: _loadData,
       child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           // 统计信息
           SliverToBoxAdapter(
@@ -172,7 +259,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                '所有标签 (${filteredTags.length})',
+                '所有标签 (${_getFilteredTags().length})',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -183,15 +270,42 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final tag = filteredTags[index];
+                final tag = _displayedTags[index];
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                   child: _buildTagListItem(tag),
                 );
               },
-              childCount: filteredTags.length,
+              childCount: _displayedTags.length,
             ),
           ),
+          
+          // 加载更多指示器
+          if (_isLoadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ),
+            
+          // 没有更多数据提示
+          if (!_hasMoreItems && _displayedTags.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: Text(
+                    '已显示全部标签',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -234,8 +348,8 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
   }
 
   Widget _buildStatisticsCard() {
-    final totalTags = _topicTags.length;
-    final totalUsage = _topicTags.fold(0, (sum, tag) => sum + tag.usageCount);
+    final totalTags = _allTopicTags.length;
+    final totalUsage = _allTopicTags.fold(0, (sum, tag) => sum + tag.usageCount);
     final averageUsage = totalTags > 0 ? totalUsage / totalTags : 0.0;
 
     return Container(
@@ -308,10 +422,10 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
   }
 
   Widget _buildTagCloudCard() {
-    if (_topicTags.isEmpty) return const SizedBox();
+    if (_allTopicTags.isEmpty) return const SizedBox();
     
     // 获取使用频率前10的标签用于标签云
-    final popularTags = _topicTags.take(10).toList();
+    final popularTags = _allTopicTags.take(10).toList();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -534,7 +648,7 @@ class _TopicTagsScreenState extends State<TopicTagsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => TagDetailBottomSheet(
         initialTag: tag,
-        allTags: _topicTags,
+        allTags: _allTopicTags,
       ),
     );
   }
