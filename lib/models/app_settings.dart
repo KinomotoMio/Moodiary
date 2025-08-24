@@ -10,6 +10,12 @@ class AppSettings {
   /// LLM服务提供商（仅当analysisMethod为llm时有效）
   final String? llmProvider;
   
+  /// LLM API密钥
+  final String? llmApiKey;
+  
+  /// LLM模型名称（可选，使用默认模型）
+  final String? llmModel;
+  
   /// 是否启用调试模式
   final bool debugMode;
   
@@ -22,6 +28,8 @@ class AppSettings {
   const AppSettings({
     this.analysisMethod = AnalysisMethod.rule, // 默认使用规则分析
     this.llmProvider,
+    this.llmApiKey,
+    this.llmModel,
     this.debugMode = false,
     this.themeMode = 'system', // system/light/dark
     this.enableDataSync = false,
@@ -34,6 +42,8 @@ class AppSettings {
         json['analysisMethod'] as String? ?? 'rule',
       ),
       llmProvider: json['llmProvider'] as String?,
+      llmApiKey: json['llmApiKey'] as String?,
+      llmModel: json['llmModel'] as String?,
       debugMode: json['debugMode'] as bool? ?? false,
       themeMode: json['themeMode'] as String? ?? 'system',
       enableDataSync: json['enableDataSync'] as bool? ?? false,
@@ -45,6 +55,8 @@ class AppSettings {
     return {
       'analysisMethod': analysisMethod.value,
       'llmProvider': llmProvider,
+      'llmApiKey': llmApiKey,
+      'llmModel': llmModel,
       'debugMode': debugMode,
       'themeMode': themeMode,
       'enableDataSync': enableDataSync,
@@ -60,6 +72,8 @@ class AppSettings {
   AppSettings copyWith({
     AnalysisMethod? analysisMethod,
     String? llmProvider,
+    String? llmApiKey,
+    String? llmModel,
     bool? debugMode,
     String? themeMode,
     bool? enableDataSync,
@@ -67,6 +81,8 @@ class AppSettings {
     return AppSettings(
       analysisMethod: analysisMethod ?? this.analysisMethod,
       llmProvider: llmProvider ?? this.llmProvider,
+      llmApiKey: llmApiKey ?? this.llmApiKey,
+      llmModel: llmModel ?? this.llmModel,
       debugMode: debugMode ?? this.debugMode,
       themeMode: themeMode ?? this.themeMode,
       enableDataSync: enableDataSync ?? this.enableDataSync,
@@ -75,10 +91,14 @@ class AppSettings {
 
   /// 检查设置是否有效
   bool get isValid {
-    // 如果使用LLM分析，必须指定提供商
-    if (analysisMethod == AnalysisMethod.llm && 
-        (llmProvider == null || llmProvider!.isEmpty)) {
-      return false;
+    // 如果使用LLM分析，必须指定提供商和API密钥
+    if (analysisMethod == AnalysisMethod.llm) {
+      if (llmProvider == null || llmProvider!.isEmpty) {
+        return false;
+      }
+      if (llmApiKey == null || llmApiKey!.isEmpty) {
+        return false;
+      }
     }
     
     // 主题模式必须是有效值
@@ -101,6 +121,8 @@ class AppSettings {
           runtimeType == other.runtimeType &&
           analysisMethod == other.analysisMethod &&
           llmProvider == other.llmProvider &&
+          llmApiKey == other.llmApiKey &&
+          llmModel == other.llmModel &&
           debugMode == other.debugMode &&
           themeMode == other.themeMode &&
           enableDataSync == other.enableDataSync;
@@ -109,6 +131,8 @@ class AppSettings {
   int get hashCode => Object.hash(
         analysisMethod,
         llmProvider,
+        llmApiKey,
+        llmModel,
         debugMode,
         themeMode,
         enableDataSync,
@@ -119,6 +143,8 @@ class AppSettings {
     return 'AppSettings('
         'analysisMethod: $analysisMethod, '
         'llmProvider: $llmProvider, '
+        'llmApiKey: ${llmApiKey?.isNotEmpty == true ? '[CONFIGURED]' : null}, '
+        'llmModel: $llmModel, '
         'debugMode: $debugMode, '
         'themeMode: $themeMode, '
         'enableDataSync: $enableDataSync'
