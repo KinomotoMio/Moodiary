@@ -45,6 +45,9 @@ dependencies:
   image_picker: ^1.0.7        # 图片选择
   path_provider: ^2.1.2       # 文件路径管理
   path: ^1.9.0                # 路径操作
+  
+  # Network and API
+  dio: ^5.4.1                 # HTTP客户端
 
 dev_dependencies:
   flutter_test:
