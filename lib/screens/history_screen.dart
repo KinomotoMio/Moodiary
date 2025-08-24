@@ -33,6 +33,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   MoodType? _selectedMoodFilter;
   TimeFilter _selectedTimeFilter = TimeFilter.all;
   RangeValues _scoreRangeFilter = const RangeValues(0, 100);
+  MediaFilter _selectedMediaFilter = MediaFilter.all;
   
   // 事件监听
   late StreamSubscription _moodDataSubscription;
@@ -136,6 +137,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
              fragment.emotionScore <= _scoreRangeFilter.end;
     }).toList();
     
+    // 媒体类型筛选
+    if (_selectedMediaFilter != MediaFilter.all) {
+      filtered = filtered.where((fragment) {
+        switch (_selectedMediaFilter) {
+          case MediaFilter.textOnly:
+            return fragment.type == FragmentType.text;
+          case MediaFilter.withImage:
+            return fragment.type == FragmentType.image || fragment.type == FragmentType.mixed;
+          case MediaFilter.imageOnly:
+            return fragment.type == FragmentType.image;
+          case MediaFilter.mixed:
+            return fragment.type == FragmentType.mixed;
+          case MediaFilter.all:
+            return true;
+        }
+      }).toList();
+    }
+    
     setState(() {
       _filteredFragments = filtered;
     });
@@ -147,6 +166,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedMoodFilter = null;
       _selectedTimeFilter = TimeFilter.all;
       _scoreRangeFilter = const RangeValues(0, 100);
+      _selectedMediaFilter = MediaFilter.all;
       _isSearchExpanded = false;
     });
     _applyFilters();
@@ -223,6 +243,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   if (_isSearchExpanded) _buildSearchBox(),
                   // 筛选状态显示
                   if (_hasActiveFilters()) _buildFilterChips(),
+                  // 搜索结果统计
+                  if (_hasActiveFilters()) _buildSearchStats(),
                   // 记录列表
                   Expanded(
                     child: _filteredFragments.isEmpty
@@ -261,32 +283,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildSearchBox() {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       padding: const EdgeInsets.all(16.0),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: '搜索心情记录...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => _searchController.clear(),
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 200),
+        scale: _isSearchExpanded ? 1.0 : 0.95,
+        child: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: '搜索心情记录...',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => _searchController.clear(),
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           ),
-          filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         ),
       ),
     );
   }
 
   Widget _buildFilterChips() {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: SingleChildScrollView(
@@ -296,62 +325,174 @@ class _HistoryScreenState extends State<HistoryScreen> {
             if (_selectedMoodFilter != null)
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: FilterChip(
-                  label: Text(_selectedMoodFilter!.displayName),
-                  avatar: Text(_selectedMoodFilter!.emoji),
-                  selected: true,
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedMoodFilter = null;
-                    });
-                    _applyFilters();
-                  },
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 200),
+                  scale: 1.0,
+                  child: FilterChip(
+                    label: Text(_selectedMoodFilter!.displayName),
+                    avatar: Text(_selectedMoodFilter!.emoji),
+                    selected: true,
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedMoodFilter = null;
+                      });
+                      _applyFilters();
+                    },
+                  ),
                 ),
               ),
             if (_selectedTimeFilter != TimeFilter.all)
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: FilterChip(
-                  label: Text(_selectedTimeFilter.displayName),
-                  avatar: const Icon(Icons.access_time, size: 16),
-                  selected: true,
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedTimeFilter = TimeFilter.all;
-                    });
-                    _applyFilters();
-                  },
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 200),
+                  scale: 1.0,
+                  child: FilterChip(
+                    label: Text(_selectedTimeFilter.displayName),
+                    avatar: const Icon(Icons.access_time, size: 16),
+                    selected: true,
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedTimeFilter = TimeFilter.all;
+                      });
+                      _applyFilters();
+                    },
+                  ),
                 ),
               ),
             if (_scoreRangeFilter.start > 0 || _scoreRangeFilter.end < 100)
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: FilterChip(
-                  label: Text('评分 ${_scoreRangeFilter.start.round()}-${_scoreRangeFilter.end.round()}'),
-                  avatar: const Icon(Icons.trending_up, size: 16),
-                  selected: true,
-                  onSelected: (_) {
-                    setState(() {
-                      _scoreRangeFilter = const RangeValues(0, 100);
-                    });
-                    _applyFilters();
-                  },
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 200),
+                  scale: 1.0,
+                  child: FilterChip(
+                    label: Text('评分 ${_scoreRangeFilter.start.round()}-${_scoreRangeFilter.end.round()}'),
+                    avatar: const Icon(Icons.trending_up, size: 16),
+                    selected: true,
+                    onSelected: (_) {
+                      setState(() {
+                        _scoreRangeFilter = const RangeValues(0, 100);
+                      });
+                      _applyFilters();
+                    },
+                  ),
                 ),
               ),
             if (_searchController.text.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: FilterChip(
-                  label: Text('搜索: "${_searchController.text}"'),
-                  avatar: const Icon(Icons.search, size: 16),
-                  selected: true,
-                  onSelected: (_) {
-                    _searchController.clear();
-                  },
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 200),
+                  scale: 1.0,
+                  child: FilterChip(
+                    label: Text('搜索: "${_searchController.text}"'),
+                    avatar: const Icon(Icons.search, size: 16),
+                    selected: true,
+                    onSelected: (_) {
+                      _searchController.clear();
+                    },
+                  ),
+                ),
+              ),
+            if (_selectedMediaFilter != MediaFilter.all)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 200),
+                  scale: 1.0,
+                  child: FilterChip(
+                    label: Text(_selectedMediaFilter.displayName),
+                    avatar: Icon(_selectedMediaFilter.icon, size: 16),
+                    selected: true,
+                    selectedColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.8),
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedMediaFilter = MediaFilter.all;
+                      });
+                      _applyFilters();
+                    },
+                  ),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSearchStats() {
+    if (!_hasActiveFilters() || _isLoading) return const SizedBox();
+    
+    final totalCount = _allFragments.length;
+    final filteredCount = _filteredFragments.length;
+    final percentage = totalCount > 0 ? (filteredCount / totalCount * 100).round() : 0;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.filter_list,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '筛选结果',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text(
+                '$filteredCount',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              Text(
+                ' / $totalCount 条记录',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (percentage < 100) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$percentage%',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -361,6 +502,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
            _selectedTimeFilter != TimeFilter.all ||
            _scoreRangeFilter.start > 0 ||
            _scoreRangeFilter.end < 100 ||
+           _selectedMediaFilter != MediaFilter.all ||
            _searchController.text.isNotEmpty;
   }
 
@@ -369,6 +511,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     MoodType? tempMoodFilter = _selectedMoodFilter;
     TimeFilter tempTimeFilter = _selectedTimeFilter;
     RangeValues tempScoreRange = _scoreRangeFilter;
+    MediaFilter tempMediaFilter = _selectedMediaFilter;
 
     showDialog(
       context: context,
@@ -430,6 +573,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     onSelected: (selected) {
                       setDialogState(() {
                         tempTimeFilter = selected ? filter : TimeFilter.all;
+                      });
+                    },
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                
+                // 媒体类型筛选
+                Text(
+                  '媒体类型',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  children: MediaFilter.values.map((filter) => FilterChip(
+                    label: Text(filter.displayName),
+                    avatar: Icon(filter.icon, size: 16),
+                    selected: tempMediaFilter == filter,
+                    onSelected: (selected) {
+                      setDialogState(() {
+                        tempMediaFilter = selected ? filter : MediaFilter.all;
                       });
                     },
                   )).toList(),
@@ -566,6 +732,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   tempMoodFilter = null;
                   tempTimeFilter = TimeFilter.all;
                   tempScoreRange = const RangeValues(0, 100);
+                  tempMediaFilter = MediaFilter.all;
                 });
               },
               child: const Text('重置'),
@@ -577,6 +744,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   _selectedMoodFilter = tempMoodFilter;
                   _selectedTimeFilter = tempTimeFilter;
                   _scoreRangeFilter = tempScoreRange;
+                  _selectedMediaFilter = tempMediaFilter;
                 });
                 _applyFilters();
                 Navigator.of(context).pop();
@@ -849,4 +1017,17 @@ enum TimeFilter {
 
   const TimeFilter(this.displayName);
   final String displayName;
+}
+
+// 媒体类型筛选选项
+enum MediaFilter {
+  all('全部类型', Icons.all_inclusive),
+  textOnly('纯文字', Icons.text_fields),
+  withImage('包含图片', Icons.image),
+  imageOnly('仅图片', Icons.photo),
+  mixed('图文混合', Icons.collections);
+
+  const MediaFilter(this.displayName, this.icon);
+  final String displayName;
+  final IconData icon;
 }
