@@ -20,179 +20,168 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_id: ${{ steps.create_release.outputs.id }}
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Generate Release Notes
-      id: generate_notes
-      run: |
-        # 获取最新的两个tag之间的commit
-        PREVIOUS_TAG=$(git tag --sort=-version:refname | sed -n '2p')
-        if [ -z "$PREVIOUS_TAG" ]; then
-          PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
-        fi
-        
-        echo "## 🚀 更新内容" > release_notes.md
-        echo "" >> release_notes.md
-        
-        # 按类型分组commit
-        echo "### ✨ 新功能" >> release_notes.md
-        git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- feat" | sed 's/^- feat[^:]*: /- /' >> release_notes.md || echo "- 无新功能" >> release_notes.md
-        echo "" >> release_notes.md
-        
-        echo "### 🐛 Bug修复" >> release_notes.md
-        git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- fix" | sed 's/^- fix[^:]*: /- /' >> release_notes.md || echo "- 无Bug修复" >> release_notes.md
-        echo "" >> release_notes.md
-        
-        echo "### 💄 UI改进" >> release_notes.md
-        git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- enhance\|^- style" | sed 's/^- [^:]*: /- /' >> release_notes.md || echo "- 无UI改进" >> release_notes.md
-        echo "" >> release_notes.md
-        
-        echo "### 🔨 其他更新" >> release_notes.md
-        git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep -v "^- feat\|^- fix\|^- enhance\|^- style" | sed 's/^- [^:]*: /- /' >> release_notes.md || echo "- 无其他更新" >> release_notes.md
-        echo "" >> release_notes.md
-        
-        echo "## 📱 支持平台" >> release_notes.md
-        echo "- 🤖 Android 5.0+ (API 21+)" >> release_notes.md
-        echo "- 🌐 Web浏览器 (Chrome, Firefox, Safari, Edge)" >> release_notes.md
-        echo "- 🖥️ Windows, macOS, Linux (实验性支持)" >> release_notes.md
-        echo "" >> release_notes.md
-        
-        echo "## 🔗 在线体验" >> release_notes.md
-        echo "- **Web版本**: https://kinomotomio.github.io/Moodiary/" >> release_notes.md
-        echo "- **源代码**: https://github.com/KinomotoMio/Moodiary" >> release_notes.md
-    
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name || github.event.inputs.version }}
-        release_name: 'Moodiary ${{ github.ref_name || github.event.inputs.version }} "静海"'
-        body_path: release_notes.md
-        draft: true
-        prerelease: ${{ contains(github.ref_name || github.event.inputs.version, 'beta') || contains(github.ref_name || github.event.inputs.version, 'alpha') }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Release Notes
+        id: generate_notes
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "## 🚀 更新内容" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### ✨ 新功能" >> release_notes.md
+          git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- feat" | sed 's/^- feat[^:]*: /- /' >> release_notes.md || echo "- 无新功能" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 🐛 Bug修复" >> release_notes.md
+          git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- fix" | sed 's/^- fix[^:]*: /- /' >> release_notes.md || echo "- 无Bug修复" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 💄 UI改进" >> release_notes.md
+          git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- enhance\|^- style" | sed 's/^- [^:]*: /- /' >> release_notes.md || echo "- 无UI改进" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 🔨 其他更新" >> release_notes.md
+          git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep -v "^- feat\|^- fix\|^- enhance\|^- style" | sed 's/^- [^:]*: /- /' >> release_notes.md || echo "- 无其他更新" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## 📱 支持平台" >> release_notes.md
+          echo "- 🤖 Android 5.0+ (API 21+)" >> release_notes.md
+          echo "- 🌐 Web浏览器 (Chrome, Firefox, Safari, Edge)" >> release_notes.md
+          echo "- 🖥️ Windows, macOS, Linux (实验性支持)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## 🔗 在线体验" >> release_notes.md
+          echo "- **Web版本**: https://kinomotomio.github.io/Moodiary/" >> release_notes.md
+          echo "- **源代码**: https://github.com/KinomotoMio/Moodiary" >> release_notes.md
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name || github.event.inputs.version }}
+          release_name: 'Moodiary ${{ github.ref_name || github.event.inputs.version }} "静海"'
+          body_path: release_notes.md
+          draft: true
+          prerelease: ${{ contains(github.ref_name || github.event.inputs.version, 'beta') || contains(github.ref_name || github.event.inputs.version, 'alpha') }}
 
   build-android:
     needs: create-release
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '11'
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-        cache: true
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build APK
-      run: |
-        flutter build apk --release --split-per-abi
-        flutter build apk --release --target-platform android-arm,android-arm64,android-x64
-    
-    - name: Sign APK (if keystore available)
-      if: env.KEYSTORE_BASE64 != ''
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      run: |
-        echo $KEYSTORE_BASE64 | base64 --decode > android/app/keystore.jks
-        echo "storePassword=${KEYSTORE_PASSWORD}" > android/key.properties
-        echo "keyPassword=${KEY_PASSWORD}" >> android/key.properties
-        echo "keyAlias=${KEY_ALIAS}" >> android/key.properties
-        echo "storeFile=keystore.jks" >> android/key.properties
-    
-    - name: Upload Universal APK
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: build/app/outputs/flutter-apk/app-release.apk
-        asset_name: moodiary-${{ github.ref_name || github.event.inputs.version }}-universal.apk
-        asset_content_type: application/vnd.android.package-archive
-    
-    - name: Upload ARM64 APK
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-        asset_name: moodiary-${{ github.ref_name || github.event.inputs.version }}-arm64-v8a.apk
-        asset_content_type: application/vnd.android.package-archive
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: |
+          flutter build apk --release --split-per-abi
+          flutter build apk --release --target-platform android-arm,android-arm64,android-x64
+
+      - name: Sign APK (if keystore available)
+        if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo $KEYSTORE_BASE64 | base64 --decode > android/app/keystore.jks
+          echo "storePassword=${KEYSTORE_PASSWORD}" > android/key.properties
+          echo "keyPassword=${KEY_PASSWORD}" >> android/key.properties
+          echo "keyAlias=${KEY_ALIAS}" >> android/key.properties
+          echo "storeFile=keystore.jks" >> android/key.properties
+
+      - name: Upload Universal APK
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: build/app/outputs/flutter-apk/app-release.apk
+          asset_name: moodiary-${{ github.ref_name || github.event.inputs.version }}-universal.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload ARM64 APK
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          asset_name: moodiary-${{ github.ref_name || github.event.inputs.version }}-arm64-v8a.apk
+          asset_content_type: application/vnd.android.package-archive
 
   build-web:
     needs: create-release
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-        cache: true
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build Web
-      run: |
-        flutter build web --release \
-          --web-renderer html \
-          --source-maps \
-          --base-href "/"
-    
-    - name: Create Web Archive
-      run: |
-        cd build/web
-        tar -czf ../../moodiary-web-${{ github.ref_name || github.event.inputs.version }}.tar.gz *
-    
-    - name: Upload Web Archive
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: moodiary-web-${{ github.ref_name || github.event.inputs.version }}.tar.gz
-        asset_name: moodiary-web-${{ github.ref_name || github.event.inputs.version }}.tar.gz
-        asset_content_type: application/gzip
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        run: |
+          flutter build web --release \
+            --source-maps \
+            --base-href "/"
+          # 注：已删除 --web-renderer；若要 Wasm 可改为：
+          # flutter build web --release --wasm --source-maps --base-href "/"
+
+      - name: Create Web Archive
+        run: |
+          cd build/web
+          tar -czf ../../moodiary-web-${{ github.ref_name || github.event.inputs.version }}.tar.gz *
+
+      - name: Upload Web Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: moodiary-web-${{ github.ref_name || github.event.inputs.version }}.tar.gz
+          asset_name: moodiary-web-${{ github.ref_name || github.event.inputs.version }}.tar.gz
+          asset_content_type: application/gzip
 
   publish-release:
     needs: [create-release, build-android, build-web]
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Publish Release
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            release_id: ${{ needs.create-release.outputs.release_id }},
-            draft: false
-          })
+      - name: Publish Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ needs.create-release.outputs.release_id }},
+              draft: false
+            })
