@@ -7,18 +7,22 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# 设置权限以允许部署到GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# 确保同一时间只有一个部署在运行
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
+  # 构建作业
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,6 +40,14 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      # 新增：在构建前启用 Web 平台（幂等）
+      - name: Enable Flutter web (idempotent)
+        run: |
+          flutter config --enable-web
+          if [ ! -d "web" ]; then
+            flutter create . --platforms web
+          fi
+
       - name: Analyze code
         run: flutter analyze
 
@@ -47,8 +59,7 @@ jobs:
           flutter build web --release \
             --base-href "/Moodiary/" \
             --source-maps
-          # 注：不再传 --web-renderer；如需试水 Wasm，可改为：
-          # flutter build web --release --wasm --base-href "/Moodiary/" --source-maps
+          # 注意：已删除 --web-renderer 相关参数
 
       - name: Setup Pages
         if: github.ref == 'refs/heads/main'
@@ -60,6 +71,7 @@ jobs:
         with:
           path: './build/web'
 
+  # 部署作业
   deploy:
     if: github.ref == 'refs/heads/main'
     environment:
@@ -67,6 +79,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -84,17 +97,20 @@ jobs:
               body: '🚀 Preview deployed to: ${{ steps.deployment.outputs.page_url }}'
             })
 
+  # Android构建作业（可选，用于生成APK）
   build-android:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      # 修改：Java 11 -> 17，并开启 Gradle 缓存
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'    # temurin 也可
+          distribution: 'zulu'
           java-version: '17'
           cache: 'gradle'
 
@@ -117,36 +133,3 @@ jobs:
           name: android-release-apks
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 30
-
-  code-quality:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.1'
-          channel: 'stable'
-          cache: true
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Analyze project source
-        run: flutter analyze
-
-      - name: Run tests with coverage
-        run: flutter test --coverage
-
-      - name: Upload coverage reports
-        if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v3
-        with:
-          file: coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella

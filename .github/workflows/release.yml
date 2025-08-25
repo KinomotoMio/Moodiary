@@ -20,6 +20,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_id: ${{ steps.create_release.outputs.id }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,29 +30,38 @@ jobs:
       - name: Generate Release Notes
         id: generate_notes
         run: |
+          # 获取最新的两个tag之间的commit
           PREVIOUS_TAG=$(git tag --sort=-version:refname | sed -n '2p')
           if [ -z "$PREVIOUS_TAG" ]; then
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
+          
           echo "## 🚀 更新内容" > release_notes.md
           echo "" >> release_notes.md
+          
+          # 按类型分组commit
           echo "### ✨ 新功能" >> release_notes.md
           git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- feat" | sed 's/^- feat[^:]*: /- /' >> release_notes.md || echo "- 无新功能" >> release_notes.md
           echo "" >> release_notes.md
+          
           echo "### 🐛 Bug修复" >> release_notes.md
           git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- fix" | sed 's/^- fix[^:]*: /- /' >> release_notes.md || echo "- 无Bug修复" >> release_notes.md
           echo "" >> release_notes.md
+          
           echo "### 💄 UI改进" >> release_notes.md
           git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep "^- enhance\|^- style" | sed 's/^- [^:]*: /- /' >> release_notes.md || echo "- 无UI改进" >> release_notes.md
           echo "" >> release_notes.md
+          
           echo "### 🔨 其他更新" >> release_notes.md
           git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD | grep -v "^- feat\|^- fix\|^- enhance\|^- style" | sed 's/^- [^:]*: /- /' >> release_notes.md || echo "- 无其他更新" >> release_notes.md
           echo "" >> release_notes.md
+          
           echo "## 📱 支持平台" >> release_notes.md
           echo "- 🤖 Android 5.0+ (API 21+)" >> release_notes.md
           echo "- 🌐 Web浏览器 (Chrome, Firefox, Safari, Edge)" >> release_notes.md
           echo "- 🖥️ Windows, macOS, Linux (实验性支持)" >> release_notes.md
           echo "" >> release_notes.md
+          
           echo "## 🔗 在线体验" >> release_notes.md
           echo "- **Web版本**: https://kinomotomio.github.io/Moodiary/" >> release_notes.md
           echo "- **源代码**: https://github.com/KinomotoMio/Moodiary" >> release_notes.md
@@ -71,11 +81,13 @@ jobs:
   build-android:
     needs: create-release
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      # 修改：Java 11 -> 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -134,6 +146,7 @@ jobs:
   build-web:
     needs: create-release
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -145,6 +158,14 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # 新增：在构建前启用 Web 平台（幂等）
+      - name: Enable Flutter web (idempotent)
+        run: |
+          flutter config --enable-web
+          if [ ! -d "web" ]; then
+            flutter create . --platforms web
+          fi
+
       - name: Get dependencies
         run: flutter pub get
 
@@ -153,8 +174,7 @@ jobs:
           flutter build web --release \
             --source-maps \
             --base-href "/"
-          # 注：已删除 --web-renderer；若要 Wasm 可改为：
-          # flutter build web --release --wasm --source-maps --base-href "/"
+          # 注意：已删除 --web-renderer
 
       - name: Create Web Archive
         run: |
@@ -174,6 +194,7 @@ jobs:
   publish-release:
     needs: [create-release, build-android, build-web]
     runs-on: ubuntu-latest
+
     steps:
       - name: Publish Release
         uses: actions/github-script@v7
