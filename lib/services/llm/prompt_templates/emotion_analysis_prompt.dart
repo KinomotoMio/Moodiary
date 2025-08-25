@@ -17,7 +17,7 @@ class EmotionAnalysisPrompt {
 
 分析要求：
 1. 情绪分类：将内容分为积极(positive)、消极(negative)或中性(neutral)三类
-2. 情绪强度：评分范围1-10，其中1为非常弱，10为非常强
+2. 情绪强度：评分范围0-100，其中0为无情绪，50为中等强度，100为极强情绪
 3. 关键词提取：提取能够反映情绪状态的关键词或短语，最多5个
 4. 分析推理：简要说明分类依据，100字以内
 
@@ -26,7 +26,7 @@ class EmotionAnalysisPrompt {
 ```json
 {
   "moodType": "positive/negative/neutral",
-  "emotionScore": 数字(1-10),
+  "emotionScore": 数字(0-100),
   "extractedTags": ["关键词1", "关键词2", "关键词3"],
   "reasoning": "分析推理说明",
   "confidence": 数字(0.0-1.0)
@@ -35,7 +35,7 @@ class EmotionAnalysisPrompt {
 
 注意事项：
 - moodType必须是positive、negative或neutral之一
-- emotionScore必须是1-10之间的整数
+- emotionScore必须是0-100之间的整数
 - extractedTags数组最多包含5个字符串
 - reasoning要简洁明了，聚焦关键情绪表达
 - confidence表示分析结果的置信度，0.0-1.0之间的小数
@@ -65,7 +65,7 @@ $numberedContents
 分析要求：
 1. 对每条内容进行独立的情绪分析
 2. 情绪分类：积极(positive)、消极(negative)或中性(neutral)
-3. 情绪强度：评分1-10
+3. 情绪强度：评分0-100
 4. 关键词提取：每条最多3个关键词
 5. 简要推理：50字以内
 
@@ -76,7 +76,7 @@ $numberedContents
   {
     "index": 1,
     "moodType": "positive/negative/neutral",
-    "emotionScore": 数字(1-10),
+    "emotionScore": 数字(0-100),
     "extractedTags": ["关键词1", "关键词2"],
     "reasoning": "分析推理",
     "confidence": 数字(0.0-1.0)
@@ -84,7 +84,7 @@ $numberedContents
   {
     "index": 2,
     "moodType": "positive/negative/neutral",
-    "emotionScore": 数字(1-10),
+    "emotionScore": 数字(0-100),
     "extractedTags": ["关键词1", "关键词2"],
     "reasoning": "分析推理",
     "confidence": 数字(0.0-1.0)
@@ -142,7 +142,7 @@ $numberedContents
       
       // 验证emotionScore范围
       final emotionScore = result['emotionScore'];
-      if (emotionScore is! int || emotionScore < 1 || emotionScore > 10) {
+      if (emotionScore is! int || emotionScore < 0 || emotionScore > 100) {
         throw const FormatException('Invalid emotionScore value');
       }
       
