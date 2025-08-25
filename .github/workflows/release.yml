@@ -12,7 +12,7 @@ on:
         default: 'v1.0.0-beta.1'
 
 env:
-  FLUTTER_VERSION: '3.24.0'
+  FLUTTER_VERSION: 'stable'
 
 jobs:
   create-release:
