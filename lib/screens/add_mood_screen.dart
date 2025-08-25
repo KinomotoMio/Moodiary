@@ -437,14 +437,15 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
                     _getScoreColor(result.score),
                   ),
                 ),
-                Expanded(
-                  child: _buildAnalysisItem(
-                    '置信度',
-                    '${(result.confidence * 100).toStringAsFixed(0)}%',
-                    Icons.verified_outlined,
-                    Theme.of(context).colorScheme.primary,
-                  ),
-                ),
+                // 置信度作为内部分析质量指标，不向用户展示
+                // Expanded(
+                //   child: _buildAnalysisItem(
+                //     '置信度',
+                //     '${(result.confidence * 100).toStringAsFixed(0)}%',
+                //     Icons.verified_outlined,
+                //     Theme.of(context).colorScheme.primary,
+                //   ),
+                // ),
               ],
             ),
           ],

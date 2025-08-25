@@ -28,6 +28,7 @@ class AnalysisResult {
   
   /// 分析置信度 (0.0-1.0)，可选
   /// AI分析可能提供置信度分数，规则分析可能基于关键词匹配程度
+  /// 注意：仅作为内部质量指标，不在UI中展示给用户
   final double? confidence;
 
   const AnalysisResult({
