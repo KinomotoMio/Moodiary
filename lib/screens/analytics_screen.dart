@@ -5,6 +5,7 @@ import '../services/analytics_service.dart';
 import '../services/fragment_storage_service.dart';
 import '../widgets/chart_widgets.dart';
 import '../widgets/fragment_card.dart';
+import '../widgets/contributions_heatmap.dart';
 import '../models/mood_fragment.dart';
 import '../models/mood_entry.dart';
 import '../events/app_events.dart';
@@ -217,6 +218,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               ],
             ),
           ),
+          const SizedBox(height: 24),
+
+          // GitHub风格热力图
+          _buildSectionHeader('情绪记录贡献图'),
+          const ContributionsHeatmap(),
           const SizedBox(height: 24),
 
           // 记录频率
