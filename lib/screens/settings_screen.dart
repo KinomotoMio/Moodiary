@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
 import '../services/emotion_service.dart';
+import '../services/storage_service.dart';
 import '../models/app_settings.dart';
 import '../enums/analysis_method.dart';
 
@@ -21,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settingsService = SettingsService.instance;
   final EmotionService _emotionService = EmotionService.instance;
+  final StorageService _storageService = StorageService.instance;
   
   final bool _isLoading = false;
   AnalysisStrategyStatus? _strategyStatus;
@@ -548,6 +550,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// 打开GitHub仓库
+  Future<void> _openGitHubRepo() async {
+    try {
+      // TODO: 使用url_launcher打开链接
+      // await launchUrl(Uri.parse('https://github.com/KinomotoMio/Moodiary'));
+      _showSuccessSnackBar('GitHub: https://github.com/KinomotoMio/Moodiary');
+    } catch (e) {
+      _showErrorSnackBar('打开链接失败: $e');
+    }
+  }
+  
+  /// 打开GitHub Issues
+  Future<void> _openGitHubIssues() async {
+    try {
+      // TODO: 使用url_launcher打开链接
+      // await launchUrl(Uri.parse('https://github.com/KinomotoMio/Moodiary/issues'));
+      _showSuccessSnackBar('GitHub Issues: https://github.com/KinomotoMio/Moodiary/issues');
+    } catch (e) {
+      _showErrorSnackBar('打开链接失败: $e');
+    }
+  }
+
   /// 获取提供商帮助文本
   String _getProviderHelpText(String provider) {
     switch (provider) {
@@ -612,6 +636,145 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// 使用统计区域
+  Widget _buildStatsSection() {
+    return FutureBuilder(
+      future: _getAppStatistics(),
+      builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        final stats = snapshot.data!;
+        return Column(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.analytics_outlined),
+              title: const Text('使用统计'),
+              subtitle: Text('您的Moodiary使用概况'),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      '总记录数',
+                      '${stats['totalEntries']}',
+                      Icons.edit_note_outlined,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      '使用天数',
+                      '${stats['usageDays']}',
+                      Icons.calendar_today_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      '平均情绪',
+                      '${stats['averageScore'].toStringAsFixed(1)}分',
+                      Icons.psychology_outlined,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      '当前分析',
+                      stats['currentMethod'],
+                      Icons.smart_toy_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  /// 统计项目组件
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 获取应用统计数据
+  Future<Map<String, dynamic>> _getAppStatistics() async {
+    try {
+      final entries = await _storageService.getAllMoodEntries();
+      final settings = _settingsService.currentSettings;
+      
+      // 计算使用天数（从第一条记录到现在）
+      int usageDays = 0;
+      if (entries.isNotEmpty) {
+        final firstEntry = entries.last; // 按时间降序排列，最后一个是最早的
+        final daysSinceFirst = DateTime.now().difference(firstEntry.timestamp).inDays;
+        usageDays = daysSinceFirst + 1; // 包含今天
+      }
+      
+      // 计算平均情绪分数
+      double averageScore = 0.0;
+      if (entries.isNotEmpty) {
+        final totalScore = entries.fold<int>(0, (sum, entry) => sum + entry.emotionScore);
+        averageScore = totalScore / entries.length;
+      }
+      
+      // 获取当前分析方式
+      String currentMethod = settings.analysisMethod.displayName;
+      
+      return {
+        'totalEntries': entries.length,
+        'usageDays': usageDays,
+        'averageScore': averageScore,
+        'currentMethod': currentMethod,
+      };
+    } catch (e) {
+      return {
+        'totalEntries': 0,
+        'usageDays': 0,
+        'averageScore': 0.0,
+        'currentMethod': '规则分析',
+      };
+    }
+  }
+
   /// 关于区域
   Widget _buildAboutSection() {
     return Card(
@@ -640,17 +803,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const ListTile(
               leading: Icon(Icons.mobile_friendly_outlined),
               title: Text('Moodiary'),
-              subtitle: Text('版本 1.0.0 (Phase 3)\n温暖治愈的AI心情日记'),
+              subtitle: Text('版本 v1.0.0-beta.1 · 静海 (Tranquillity)\nPhase 3 - AI增强版\n温暖治愈的AI心情日记'),
             ),
+            
+            const Divider(),
+            _buildStatsSection(),
+            
+            const Divider(),
             
             ListTile(
               leading: const Icon(Icons.favorite_outlined),
               title: const Text('开源项目'),
               subtitle: const Text('基于Flutter开发的跨平台应用'),
+              trailing: const Icon(Icons.open_in_new),
               onTap: () {
-                // TODO: 打开GitHub链接
-                _showSuccessSnackBar('感谢您的支持！');
+                _openGitHubRepo();
               },
+            ),
+            
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('问题反馈'),
+              subtitle: const Text('报告问题或提出功能建议'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () {
+                _openGitHubIssues();
+              },
+            ),
+            
+            ListTile(
+              leading: const Icon(Icons.info_outlined),
+              title: const Text('AI功能说明'),
+              subtitle: const Text('支持SiliconFlow、DeepSeek多种AI服务\n数据本地存储，仅分析时调用API'),
             ),
           ],
         ),
