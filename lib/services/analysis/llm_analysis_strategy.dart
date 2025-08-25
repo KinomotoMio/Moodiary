@@ -31,7 +31,7 @@ class LLMAnalysisStrategy implements AnalysisStrategy {
       final settings = _settingsService.currentSettings;
       
       // 检查是否配置了LLM服务
-      if (settings.llmProvider == null || settings.llmApiKey == null) {
+      if (!settings.isLLMConfigured) {
         return false;
       }
       
@@ -66,7 +66,7 @@ class LLMAnalysisStrategy implements AnalysisStrategy {
     try {
       final settings = _settingsService.currentSettings;
       
-      if (settings.llmProvider == null || settings.llmApiKey == null) {
+      if (!settings.isLLMConfigured) {
         throw const LLMException('LLM provider or API key not configured');
       }
 
@@ -126,7 +126,7 @@ class LLMAnalysisStrategy implements AnalysisStrategy {
     try {
       final settings = _settingsService.currentSettings;
       
-      if (settings.llmProvider == null || settings.llmApiKey == null) {
+      if (!settings.isLLMConfigured) {
         return false;
       }
 
@@ -174,7 +174,7 @@ class LLMAnalysisStrategy implements AnalysisStrategy {
     try {
       final settings = _settingsService.currentSettings;
       
-      if (settings.llmProvider == null || settings.llmApiKey == null) {
+      if (!settings.isLLMConfigured) {
         throw const LLMException('LLM provider or API key not configured');
       }
 
