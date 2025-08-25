@@ -22,8 +22,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settingsService = SettingsService.instance;
   final EmotionService _emotionService = EmotionService.instance;
   
-  bool _isLoading = true;
+  final bool _isLoading = false;
   AnalysisStrategyStatus? _strategyStatus;
+  bool _isTesting = false;
 
   @override
   void initState() {
@@ -32,23 +33,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
+    // 不再自动检查API连通性，设置页面加载应该是即时的
+  }
+
+  Future<void> _testAPIConnection() async {
+    if (_isTesting) return;
+    
     setState(() {
-      _isLoading = true;
+      _isTesting = true;
+      _strategyStatus = null; // 重置之前的测试状态
     });
 
     try {
-      // 获取分析策略状态
       final status = await _emotionService.getStrategyStatus();
-      setState(() {
-        _strategyStatus = status;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       if (mounted) {
-        _showErrorSnackBar('加载设置失败: $e');
+        setState(() {
+          _strategyStatus = status;
+          _isTesting = false;
+        });
+        
+        if (status.isAvailable) {
+          _showSuccessSnackBar('API连通性测试成功');
+        } else {
+          _showErrorSnackBar('API连通性测试失败: ${status.statusMessage}');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isTesting = false;
+          _strategyStatus = AnalysisStrategyStatus(
+            method: _settingsService.currentSettings.analysisMethod,
+            isAvailable: false,
+            statusMessage: '测试失败: $e',
+            canFallback: false,
+          );
+        });
+        _showErrorSnackBar('API连通性测试失败: $e');
       }
     }
   }
@@ -357,7 +378,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
               try {
                 await _settingsService.updateSettings(newSettings);
-                setState(() {});
+                setState(() {
+                  // 重置API测试状态，因为提供商配置发生了变化
+                  _strategyStatus = null;
+                });
                 _showSuccessSnackBar('AI服务提供商已更新');
               } catch (e) {
                 _showErrorSnackBar('更新失败: $e');
@@ -395,7 +419,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final newSettings = currentSettings.copyWith(llmApiKey: value);
               try {
                 await _settingsService.updateSettings(newSettings);
-                await _loadSettings(); // 重新加载状态
+                // 重置API测试状态，因为API密钥发生了变化
+                setState(() {
+                  _strategyStatus = null;
+                });
               } catch (e) {
                 _showErrorSnackBar('保存API密钥失败: $e');
               }
@@ -442,20 +469,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Text(
-                  _strategyStatus?.statusMessage ?? '未检测',
+                  _isTesting 
+                      ? '测试中...' 
+                      : (_strategyStatus?.statusMessage ?? '点击测试按钮检查连接状态'),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: _strategyStatus?.isAvailable == true
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.error,
+                    color: _isTesting 
+                        ? Theme.of(context).colorScheme.secondary
+                        : (_strategyStatus?.isAvailable == true
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.error),
                   ),
                 ),
               ],
             ),
           ),
           TextButton(
-            onPressed: _loadSettings,
-            child: const Text('重新测试'),
+            onPressed: _isTesting ? null : _testAPIConnection,
+            child: Text(_isTesting ? '测试中' : '测试连接'),
           ),
         ],
       ),
@@ -619,9 +650,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 更改分析方法
   Future<void> _changeAnalysisMethod(AnalysisMethod method) async {
     try {
-      await _settingsService.updateAnalysisMethod(method);
+      final currentSettings = _settingsService.currentSettings;
+      AppSettings newSettings;
+      
+      if (method == AnalysisMethod.llm) {
+        // 切换到AI分析时，提供默认的配置
+        newSettings = currentSettings.copyWith(
+          analysisMethod: method,
+          llmProvider: currentSettings.llmProvider ?? 'siliconflow', // 默认使用SiliconFlow
+          // 不设置API密钥，让用户后续配置
+        );
+      } else {
+        // 切换到规则分析或本地AI
+        newSettings = currentSettings.copyWith(
+          analysisMethod: method,
+        );
+      }
+      
+      await _settingsService.updateSettings(newSettings);
       _showSuccessSnackBar('分析方式已更改为${method.displayName}');
-      await _loadSettings(); // 重新加载状态
+      
+      // 重置API测试状态，因为配置发生了变化
+      setState(() {
+        _strategyStatus = null;
+      });
+      
+      if (method == AnalysisMethod.llm && newSettings.llmApiKey == null) {
+        // 提示用户配置API密钥
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            _showErrorSnackBar('请在下方配置AI服务提供商和API密钥');
+          }
+        });
+      }
     } catch (e) {
       _showErrorSnackBar('更改失败: $e');
     }
