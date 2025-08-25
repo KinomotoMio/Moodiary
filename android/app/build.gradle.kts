@@ -35,23 +35,18 @@ android {
 
     buildTypes {
         release {
-            // 启用代码混淆和压缩
+            // 简化的代码混淆配置
             isMinifyEnabled = true
             isShrinkResources = true
             
-            // ProGuard规则
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 使用基础ProGuard规则，不使用optimize
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
             
             // 签名配置 - 生产环境需要配置真实签名
             signingConfig = signingConfigs.getByName("debug")
             
             // 构建配置
             isDebuggable = false
-            isJniDebuggable = false
-            isPseudoLocalesEnabled = false
-            
-            // 性能优化
-            renderscriptOptimLevel = 3
         }
         
         debug {
