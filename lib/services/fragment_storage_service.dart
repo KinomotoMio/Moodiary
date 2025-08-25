@@ -141,9 +141,9 @@ class FragmentStorageService {
     final allFragments = await getAllFragments();
     return allFragments.where((fragment) {
       final fragmentDate = fragment.timestamp;
-      // 包含起始日期，不包含结束日期的下一天
+      // startDate <= fragmentDate < endDate
       return (fragmentDate.isAfter(startDate) || fragmentDate.isAtSameMomentAs(startDate)) &&
-             fragmentDate.isBefore(endDate.add(const Duration(days: 1)));
+             fragmentDate.isBefore(endDate);
     }).toList();
   }
   

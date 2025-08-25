@@ -13,8 +13,10 @@ class AnalyticsService {
   
   // 获取情绪趋势数据（用于折线图）
   Future<List<FlSpot>> getMoodTrendData({int days = 7}) async {
-    final endDate = DateTime.now();
-    final startDate = endDate.subtract(Duration(days: days));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDate = today.add(const Duration(days: 1)); // 明天00:00
+    final startDate = today.subtract(Duration(days: days - 1)); // 保证包含完整的天数
     final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     if (entries.isEmpty) return [];
@@ -47,8 +49,10 @@ class AnalyticsService {
   
   // 获取情绪分布数据（用于饼状图）
   Future<List<PieChartSectionData>> getMoodDistributionData({int days = 30}) async {
-    final endDate = DateTime.now();
-    final startDate = endDate.subtract(Duration(days: days));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDate = today.add(const Duration(days: 1)); // 明天00:00
+    final startDate = today.subtract(Duration(days: days - 1)); // 保证包含完整的天数
     final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     if (entries.isEmpty) return [];
@@ -88,8 +92,10 @@ class AnalyticsService {
   
   // 获取记录频率数据（用于柱状图）
   Future<List<BarChartGroupData>> getRecordFrequencyData({int days = 7}) async {
-    final endDate = DateTime.now();
-    final startDate = endDate.subtract(Duration(days: days));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDate = today.add(const Duration(days: 1)); // 明天00:00
+    final startDate = today.subtract(Duration(days: days - 1)); // 保证包含完整的天数
     final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     // 按日期统计记录数量
@@ -127,8 +133,10 @@ class AnalyticsService {
   
   // 获取情绪洞察报告
   Future<MoodInsightsReport> getMoodInsights({int days = 30}) async {
-    final endDate = DateTime.now();
-    final startDate = endDate.subtract(Duration(days: days));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDate = today.add(const Duration(days: 1)); // 明天00:00
+    final startDate = today.subtract(Duration(days: days - 1)); // 保证包含完整的天数
     final entries = await _fragmentStorage.getMoodEntriesByDateRange(startDate, endDate);
     
     if (entries.isEmpty) {
@@ -224,14 +232,17 @@ class AnalyticsService {
   // 获取本周和本月快速统计
   Future<QuickStats> getQuickStats() async {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     
-    // 本周数据（从周一开始）
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekEntries = await _fragmentStorage.getMoodEntriesByDateRange(weekStart, now);
+    // 本周数据（从周一开始到今天结束）
+    final weekStart = today.subtract(Duration(days: now.weekday - 1));
+    final weekEnd = today.add(const Duration(days: 1)); // 明天00:00
+    final weekEntries = await _fragmentStorage.getMoodEntriesByDateRange(weekStart, weekEnd);
     
-    // 本月数据
+    // 本月数据（从月初到今天结束）
     final monthStart = DateTime(now.year, now.month, 1);
-    final monthEntries = await _fragmentStorage.getMoodEntriesByDateRange(monthStart, now);
+    final monthEnd = today.add(const Duration(days: 1)); // 明天00:00
+    final monthEntries = await _fragmentStorage.getMoodEntriesByDateRange(monthStart, monthEnd);
     
     return QuickStats(
       weekCount: weekEntries.length,
