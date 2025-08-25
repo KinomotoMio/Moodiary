@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.kinomotomio.moodiary"
-    compileSdk = 34
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -21,10 +21,10 @@ android {
 
     defaultConfig {
         applicationId = "com.kinomotomio.moodiary"
-        minSdk = 21
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0-beta.1"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
         
         // 多语言支持
         resConfigs("zh", "en")
