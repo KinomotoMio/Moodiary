@@ -76,26 +76,26 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
     final primary = Theme.of(context).colorScheme.primary;
     
     if (count == 0) {
-      return Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
+      return Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15);
     }
     
     // 根据记录数量计算强度级别
     final maxCount = _dailyContributions.values.isNotEmpty 
         ? _dailyContributions.values.reduce(max) 
-        : 1;
+        : 4;
     
-    final intensity = min(count / (maxCount / 4), 4).floor();
+    // 确保至少有4个级别的区分
+    final normalizedCount = count.toDouble();
+    final step = maxCount / 4.0;
     
-    switch (intensity) {
-      case 1:
-        return primary.withValues(alpha: 0.3);
-      case 2:
-        return primary.withValues(alpha: 0.5);
-      case 3:
-        return primary.withValues(alpha: 0.7);
-      case 4:
-      default:
-        return primary;
+    if (normalizedCount <= step) {
+      return primary.withValues(alpha: 0.25);
+    } else if (normalizedCount <= step * 2) {
+      return primary.withValues(alpha: 0.45);
+    } else if (normalizedCount <= step * 3) {
+      return primary.withValues(alpha: 0.7);
+    } else {
+      return primary;
     }
   }
 
@@ -300,7 +300,8 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
         ),
         const SizedBox(width: 8),
         ...List.generate(5, (index) {
-          final count = index == 0 ? 0 : pow(2, index - 1).toInt();
+          // 生成0, 1, 2, 3, 4级别的示例颜色
+          final count = index == 0 ? 0 : index;
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 2),
             width: 12,
