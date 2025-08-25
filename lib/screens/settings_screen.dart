@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
 import '../services/emotion_service.dart';
-import '../services/storage_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../models/app_settings.dart';
 import '../enums/analysis_method.dart';
 
@@ -22,7 +22,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settingsService = SettingsService.instance;
   final EmotionService _emotionService = EmotionService.instance;
-  final StorageService _storageService = StorageService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   
   final bool _isLoading = false;
   AnalysisStrategyStatus? _strategyStatus;
@@ -738,29 +738,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 获取应用统计数据
   Future<Map<String, dynamic>> _getAppStatistics() async {
     try {
-      final entries = await _storageService.getAllMoodEntries();
+      final fragments = await _fragmentStorage.getAllFragments();
       final settings = _settingsService.currentSettings;
       
       // 计算使用天数（从第一条记录到现在）
       int usageDays = 0;
-      if (entries.isNotEmpty) {
-        final firstEntry = entries.last; // 按时间降序排列，最后一个是最早的
-        final daysSinceFirst = DateTime.now().difference(firstEntry.timestamp).inDays;
+      if (fragments.isNotEmpty) {
+        final firstFragment = fragments.last; // 按时间降序排列，最后一个是最早的
+        final daysSinceFirst = DateTime.now().difference(firstFragment.timestamp).inDays;
         usageDays = daysSinceFirst + 1; // 包含今天
       }
       
       // 计算平均情绪分数
       double averageScore = 0.0;
-      if (entries.isNotEmpty) {
-        final totalScore = entries.fold<int>(0, (sum, entry) => sum + entry.emotionScore);
-        averageScore = totalScore / entries.length;
+      if (fragments.isNotEmpty) {
+        final totalScore = fragments.fold<int>(0, (sum, fragment) => sum + fragment.emotionScore);
+        averageScore = totalScore / fragments.length;
       }
       
       // 获取当前分析方式
       String currentMethod = settings.analysisMethod.displayName;
       
       return {
-        'totalEntries': entries.length,
+        'totalEntries': fragments.length,
         'usageDays': usageDays,
         'averageScore': averageScore,
         'currentMethod': currentMethod,
