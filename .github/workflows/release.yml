@@ -104,18 +104,13 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Regenerate Android with correct package name
-        run: |
-          echo "重新生成Android项目结构..."
-          flutter create --org com.kinomotomio --project-name moodiary . --platforms android
-          echo "Android项目结构生成完成"
-
       - name: Verify Android configuration
         run: |
-          echo "检查包名配置一致性..."
+          echo "验证Android配置..."
+          ls -la android/app/src/main/kotlin/com/kinomotomio/moodiary/
           grep -q "com.kinomotomio.moodiary" android/app/build.gradle.kts
           grep -q "package com.kinomotomio.moodiary" android/app/src/main/kotlin/com/kinomotomio/moodiary/MainActivity.kt
-          echo "包名配置验证通过"
+          echo "Android配置验证通过"
 
       - name: Build APK
         run: |

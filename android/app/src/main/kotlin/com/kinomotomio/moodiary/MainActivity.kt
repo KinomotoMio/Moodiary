@@ -1,4 +1,4 @@
-package com.example.moodiary
+package com.kinomotomio.moodiary
 
 import io.flutter.embedding.android.FlutterActivity
 
