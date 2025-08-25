@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/fragment_storage_service.dart';
+import '../services/storage_service.dart';
+import '../events/app_events.dart';
 
 /// GitHub风格的Contributions热力图组件
 class ContributionsHeatmap extends StatefulWidget {
@@ -17,12 +20,30 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
   bool _isLoading = true;
   late DateTime _endDate;
   late DateTime _startDate;
+  late StreamSubscription _moodDataSubscription;
 
   @override
   void initState() {
     super.initState();
     _setupDateRange();
+    _setupEventListeners();
     _loadContributionsData();
+  }
+
+  /// 设置事件监听器
+  void _setupEventListeners() {
+    _moodDataSubscription = StorageService.eventBus.on<MoodDataChangedEvent>().listen((event) {
+      // 当心情数据发生变化时，重新加载贡献数据
+      if (mounted) {
+        _loadContributionsData();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _moodDataSubscription.cancel();
+    super.dispose();
   }
 
   /// 设置日期范围 - 显示过去一年的数据
