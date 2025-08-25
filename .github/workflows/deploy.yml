@@ -124,6 +124,13 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Verify Android configuration
+        run: |
+          echo "检查包名配置一致性..."
+          grep -q "com.kinomotomio.moodiary" android/app/build.gradle.kts
+          grep -q "package com.kinomotomio.moodiary" android/app/src/main/kotlin/com/kinomotomio/moodiary/MainActivity.kt
+          echo "包名配置验证通过"
+
       - name: Build APK
         run: flutter build apk --release --split-per-abi
 
