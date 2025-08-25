@@ -1,0 +1,102 @@
+name: 🐛 Bug报告
+description: 报告Moodiary中的问题
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您帮助改善Moodiary！请详细描述遇到的问题，这将帮助我们更快地解决它。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 简洁地描述遇到的问题
+      placeholder: 描述问题的具体表现...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 重现步骤
+      description: 详细说明如何重现这个问题
+      placeholder: |
+        1. 打开应用
+        2. 点击 '...'
+        3. 输入 '...'
+        4. 看到错误
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 描述您期望发生什么
+      placeholder: 应该显示...
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 描述实际发生了什么
+      placeholder: 实际显示...
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 运行平台
+      description: 在哪个平台上遇到问题？
+      options:
+        - Android
+        - iOS
+        - Web浏览器
+        - Windows桌面
+        - macOS桌面
+        - Linux桌面
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本
+      description: 在"设置 > 关于"中可以查看版本号
+      placeholder: "例如: v1.0.0-beta.1"
+
+  - type: textarea
+    id: device_info
+    attributes:
+      label: 设备信息
+      description: 提供设备和系统信息
+      placeholder: |
+        - 设备: iPhone 12 Pro / Pixel 5 / 等等
+        - 操作系统: iOS 15.0 / Android 12 / Windows 11 / 等等
+        - 浏览器 (Web版): Chrome 120 / Safari 16 / 等等
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或录屏
+      description: 如果适用，添加截图或录屏来帮助解释问题
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: 附加信息
+      description: 任何其他可能有助于理解问题的信息
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认事项
+      description: 提交前请确认以下事项
+      options:
+        - label: 我已经搜索过相关的issue，确认这不是重复问题
+          required: true
+        - label: 我已经使用最新版本的应用进行了测试
+          required: true
+        - label: 我理解这是一个开源项目，维护者会尽力但不保证解决时间
+          required: true

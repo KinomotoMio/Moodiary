@@ -1,0 +1,81 @@
+name: ❓ 问题咨询
+description: 关于Moodiary使用或技术方面的问题
+title: "[Question] "
+labels: ["question", "help-wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        有问题需要帮助？我们很乐意为您解答！请详细描述您的问题。
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 问题类型
+      description: 您的问题属于哪个类别？
+      options:
+        - 使用方法 - 如何使用某个功能
+        - 技术问题 - 关于应用技术实现的问题
+        - 安装部署 - 关于应用安装或部署的问题
+        - 数据相关 - 关于数据导入、导出、备份的问题
+        - 账号设置 - 关于用户设置和个性化的问题
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 详细问题
+      description: 请详细描述您的问题
+      placeholder: 请详细说明您遇到的问题或想要了解的内容...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 背景信息
+      description: 提供相关的背景信息或您已经尝试过的方法
+      placeholder: |
+        - 我想要实现...
+        - 我已经尝试了...
+        - 我查阅了...
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 相关平台
+      description: 如果问题与特定平台相关，请选择
+      options:
+        - 不特定于平台
+        - Android
+        - iOS  
+        - Web浏览器
+        - Windows桌面
+        - macOS桌面
+        - Linux桌面
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 相关截图
+      description: 如果有助于说明问题，可以添加截图
+
+  - type: checkboxes
+    id: research
+    attributes:
+      label: 我已经进行了以下尝试
+      options:
+        - label: 查看了应用内的帮助文档或设置说明
+        - label: 搜索了已有的issues和discussions
+        - label: 尝试了重启应用或重新安装
+        - label: 在官方文档或README中寻找答案
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认事项
+      options:
+        - label: 我理解这是一个技术咨询，维护者会尽力解答但可能需要时间
+          required: true
