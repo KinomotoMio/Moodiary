@@ -775,6 +775,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// 故事区域 - 设计理念
+  Widget _buildStorySection() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_stories_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '静海 · 设计理念',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _getStoryText(),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              height: 1.6,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 获取故事文本
+  String _getStoryText() {
+    return '''我们把这个版本叫做"静海"，取自月球表面那片名为Mare Tranquillitatis的宁静之海。
+
+1969年7月，阿波罗11号在静海着陆，人类第一次踏足地外星球。宇航员看到的不是波涛汹涌的海洋，而是一片古老而宁静的平原——那里没有海水，只有岁月沉淀下来的宁静。
+
+就像情绪的本质一样。
+
+我们总是被表面的情绪波动所扰动，但在那些起伏的背后，存在着一片更深层的宁静之地。那里有你真实的感受，有你内心的声音，有你与自己对话的空间。
+
+Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变得麻木，而是在情绪的潮起潮落中，为你保留一片可以安静感受、真实记录的地方。
+
+当你在这里记录每一个情绪片段时，AI会像月球表面轻柔的引力一样，温和地理解你，不评判，只陪伴。让技术的智能与人心的温暖，在这片数字静海中安然相遇。
+
+愿每个使用Moodiary的人，都能在生活的喧嚣中，找到属于自己的那片静海。''';
+  }
+
   /// 关于区域
   Widget _buildAboutSection() {
     return Card(
@@ -836,6 +898,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: const Text('AI功能说明'),
               subtitle: const Text('支持SiliconFlow、DeepSeek多种AI服务\n数据本地存储，仅分析时调用API'),
             ),
+            
+            const Divider(),
+            _buildStorySection(),
           ],
         ),
       ),
