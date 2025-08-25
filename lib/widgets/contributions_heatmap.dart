@@ -21,10 +21,12 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
   late DateTime _endDate;
   late DateTime _startDate;
   late StreamSubscription _moodDataSubscription;
+  late int _selectedYear;
 
   @override
   void initState() {
     super.initState();
+    _selectedYear = DateTime.now().year;
     _setupDateRange();
     _setupEventListeners();
     _loadContributionsData();
@@ -46,18 +48,22 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
     super.dispose();
   }
 
-  /// 设置日期范围 - 显示过去一年的数据
+  /// 设置日期范围 - 显示指定年份的数据
   void _setupDateRange() {
-    final now = DateTime.now();
-    _endDate = DateTime(now.year, now.month, now.day);
+    // 设置为指定年份的完整年份
+    _startDate = DateTime(_selectedYear, 1, 1);
+    _endDate = DateTime(_selectedYear, 12, 31);
     
-    // 计算一年前的日期，并调整到周日开始（GitHub风格）
-    _startDate = _endDate.subtract(const Duration(days: 365));
-    
-    // 调整到周日开始
+    // 调整开始日期到周日开始（GitHub风格）
     final startWeekday = _startDate.weekday == 7 ? 0 : _startDate.weekday;
     if (startWeekday != 0) {
       _startDate = _startDate.subtract(Duration(days: startWeekday));
+    }
+    
+    // 调整结束日期到周六结束
+    final endWeekday = _endDate.weekday == 7 ? 0 : _endDate.weekday;
+    if (endWeekday != 6) {
+      _endDate = _endDate.add(Duration(days: 6 - endWeekday));
     }
   }
 
@@ -216,7 +222,7 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 标题和统计
+            // 标题和年份选择
             Row(
               children: [
                 Icon(
@@ -231,8 +237,23 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
                   ),
                 ),
                 const Spacer(),
+                // 年份选择下拉菜单
+                _buildYearSelector(),
+              ],
+            ),
+            const SizedBox(height: 8),
+            
+            // 统计信息
+            Row(
+              children: [
                 Text(
-                  '过去一年',
+                  '${_getTotalContributions()}条记录',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  ' 在$_selectedYear年',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -255,58 +276,193 @@ class _ContributionsHeatmapState extends State<ContributionsHeatmap> {
 
   /// 构建热力图网格
   Widget _buildHeatmapGrid() {
-    const squareSize = 12.0;
-    const gap = 2.0;
-    
-    final totalDays = _endDate.difference(_startDate).inDays + 1;
-    final weeks = (totalDays / 7).ceil();
-    
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(weeks, (weekIndex) {
-          return Column(
-            children: List.generate(7, (dayIndex) {
-              final dayOffset = weekIndex * 7 + dayIndex;
-              final date = _startDate.add(Duration(days: dayOffset));
-              
-              // 如果日期超出范围则返回空白
-              if (date.isAfter(_endDate)) {
-                return const SizedBox(
-                  width: squareSize,
-                  height: squareSize,
-                );
-              }
-              
-              final count = _dailyContributions[date] ?? 0;
-              
-              return Container(
-                margin: const EdgeInsets.all(gap / 2),
-                child: Tooltip(
-                  message: '${date.month}月${date.day}日: $count条记录',
-                  child: InkWell(
-                    onTap: () => _showDateDetails(date, count),
-                    borderRadius: BorderRadius.circular(2),
-                    child: Container(
-                      width: squareSize,
-                      height: squareSize,
-                      decoration: BoxDecoration(
-                        color: _getContributionColor(count, context),
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                          width: 0.5,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 计算响应式尺寸
+        final totalWidth = constraints.maxWidth - 40; // 预留padding
+        final labelWidth = 30.0; // 星期标签宽度
+        const gap = 2.0;
+        
+        final totalDays = _endDate.difference(_startDate).inDays + 1;
+        final weeks = (totalDays / 7).ceil();
+        
+        // 计算每个方块的最佳尺寸
+        final availableWidth = totalWidth - labelWidth;
+        final squareSize = ((availableWidth - (weeks * gap)) / weeks).clamp(8.0, 12.0);
+        
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 左侧星期标签
+                SizedBox(
+                  width: labelWidth,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20), // 月份标签空间
+                      ...['', '一', '', '三', '', '五', ''].map((day) => Container(
+                        height: squareSize + gap,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          day,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                    ),
+                      )),
+                    ],
                   ),
                 ),
-              );
-            }),
+                const SizedBox(width: 8),
+                
+                // 热力图主体
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 月份标签
+                    _buildMonthLabels(weeks, squareSize, gap),
+                    const SizedBox(height: 4),
+                    
+                    // 热力图方格网格
+                    Row(
+                      children: List.generate(weeks, (weekIndex) {
+                        return Column(
+                          children: List.generate(7, (dayIndex) {
+                            final dayOffset = weekIndex * 7 + dayIndex;
+                            final date = _startDate.add(Duration(days: dayOffset));
+                            
+                            final isValidDate = !date.isBefore(DateTime(_selectedYear, 1, 1)) &&
+                                               !date.isAfter(DateTime(_selectedYear, 12, 31));
+                            
+                            if (!isValidDate) {
+                              return Container(
+                                width: squareSize,
+                                height: squareSize,
+                                margin: EdgeInsets.all(gap / 2),
+                              );
+                            }
+                            
+                            final count = _dailyContributions[date] ?? 0;
+                            
+                            return Container(
+                              width: squareSize,
+                              height: squareSize,
+                              margin: EdgeInsets.all(gap / 2),
+                              child: Tooltip(
+                                message: '${date.month}月${date.day}日: $count条记录',
+                                child: InkWell(
+                                  onTap: () => _showDateDetails(date, count),
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: _getContributionColor(count, context),
+                                      borderRadius: BorderRadius.circular(2),
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 构建月份标签
+  Widget _buildMonthLabels(int weeks, double squareSize, double gap) {
+    final labels = <Widget>[];
+    final monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', 
+                      '7月', '8月', '9月', '10月', '11月', '12月'];
+    
+    for (int month = 1; month <= 12; month++) {
+      // 计算该月1号在网格中的位置
+      final monthStart = DateTime(_selectedYear, month, 1);
+      final daysSinceGridStart = monthStart.difference(_startDate).inDays;
+      
+      // 只显示在网格范围内且在月初几天的月份标签
+      if (daysSinceGridStart >= 0 && daysSinceGridStart < weeks * 7) {
+        final weekOffset = (daysSinceGridStart / 7).floor();
+        
+        // 确保月份标签显示在合理位置（月初几天内）
+        final dayInMonth = monthStart.difference(_startDate).inDays % 7;
+        if (dayInMonth <= 6) { // 该月1号在该周内
+          labels.add(
+            Positioned(
+              left: weekOffset * (squareSize + gap),
+              child: Text(
+                monthNames[month - 1],
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+              ),
+            ),
           );
-        }),
+        }
+      }
+    }
+    
+    return SizedBox(
+      height: 16,
+      width: weeks * (squareSize + gap),
+      child: Stack(children: labels),
+    );
+  }
+
+  /// 构建年份选择器
+  Widget _buildYearSelector() {
+    final currentYear = DateTime.now().year;
+    final availableYears = List.generate(5, (index) => currentYear - index);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _selectedYear,
+          dropdownColor: Theme.of(context).colorScheme.primary,
+          iconEnabledColor: Colors.white,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          items: availableYears.map((year) => DropdownMenuItem(
+            value: year,
+            child: Text('$year'),
+          )).toList(),
+          onChanged: (year) {
+            if (year != null && year != _selectedYear) {
+              setState(() {
+                _selectedYear = year;
+                _setupDateRange();
+                _loadContributionsData();
+              });
+            }
+          },
+        ),
       ),
     );
+  }
+
+  /// 获取总记录数
+  int _getTotalContributions() {
+    return _dailyContributions.values.fold(0, (sum, count) => sum + count);
   }
 
   /// 构建图例
