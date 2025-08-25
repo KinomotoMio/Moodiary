@@ -360,7 +360,15 @@ class RecordFrequencyChart extends StatelessWidget {
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
-          barGroups: frequencyData,
+          barGroups: frequencyData.map((group) => BarChartGroupData(
+            x: group.x,
+            barRods: group.barRods.map((rod) => BarChartRodData(
+              toY: rod.toY,
+              color: theme.colorScheme.primary, // 使用主题色
+              width: rod.width,
+              borderRadius: rod.borderRadius,
+            )).toList(),
+          )).toList(),
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
