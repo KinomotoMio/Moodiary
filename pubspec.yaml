@@ -48,6 +48,7 @@ dependencies:
   
   # Network and API
   dio: ^5.4.1                 # HTTP客户端
+  url_launcher: ^6.2.4        # 外部链接启动
 
 dev_dependencies:
   flutter_test:

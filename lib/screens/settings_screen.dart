@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/settings_service.dart';
 import '../services/emotion_service.dart';
 import '../services/fragment_storage_service.dart';
@@ -553,9 +554,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 打开GitHub仓库
   Future<void> _openGitHubRepo() async {
     try {
-      // TODO: 使用url_launcher打开链接
-      // await launchUrl(Uri.parse('https://github.com/KinomotoMio/Moodiary'));
-      _showSuccessSnackBar('GitHub: https://github.com/KinomotoMio/Moodiary');
+      final uri = Uri.parse('https://github.com/KinomotoMio/Moodiary');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorSnackBar('无法打开链接，请检查浏览器设置');
+      }
     } catch (e) {
       _showErrorSnackBar('打开链接失败: $e');
     }
@@ -564,9 +568,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 打开GitHub Issues
   Future<void> _openGitHubIssues() async {
     try {
-      // TODO: 使用url_launcher打开链接
-      // await launchUrl(Uri.parse('https://github.com/KinomotoMio/Moodiary/issues'));
-      _showSuccessSnackBar('GitHub Issues: https://github.com/KinomotoMio/Moodiary/issues');
+      final uri = Uri.parse('https://github.com/KinomotoMio/Moodiary/issues');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorSnackBar('无法打开链接，请检查浏览器设置');
+      }
     } catch (e) {
       _showErrorSnackBar('打开链接失败: $e');
     }
