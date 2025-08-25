@@ -6,8 +6,8 @@ plugins {
 }
 
 android {
-    namespace = "com.example.moodiary"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.kinomotomio.moodiary"
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -20,21 +20,57 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.moodiary"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId = "com.kinomotomio.moodiary"
+        minSdk = 21
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0-beta.1"
+        
+        // 多语言支持
+        resConfigs("zh", "en")
+        
+        // ProGuard优化
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // 启用代码混淆和压缩
+            isMinifyEnabled = true
+            isShrinkResources = true
+            
+            // ProGuard规则
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            
+            // 签名配置 - 生产环境需要配置真实签名
             signingConfig = signingConfigs.getByName("debug")
+            
+            // 构建配置
+            isDebuggable = false
+            isJniDebuggable = false
+            isPseudoLocalesEnabled = false
+            
+            // 性能优化
+            renderscriptOptimLevel = 3
+        }
+        
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
+    }
+    
+    // APK分包配置
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
         }
     }
 }
