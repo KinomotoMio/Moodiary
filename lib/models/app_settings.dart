@@ -91,16 +91,6 @@ class AppSettings {
 
   /// 检查设置是否有效
   bool get isValid {
-    // 如果使用LLM分析，必须指定提供商和API密钥
-    if (analysisMethod == AnalysisMethod.llm) {
-      if (llmProvider == null || llmProvider!.isEmpty) {
-        return false;
-      }
-      if (llmApiKey == null || llmApiKey!.isEmpty) {
-        return false;
-      }
-    }
-    
     // 主题模式必须是有效值
     if (!['system', 'light', 'dark'].contains(themeMode)) {
       return false;
@@ -108,10 +98,68 @@ class AppSettings {
     
     return true;
   }
+  
+  /// 检查LLM配置是否完整（用于实际使用AI分析时的验证）
+  bool get isLLMConfigured {
+    if (analysisMethod != AnalysisMethod.llm) {
+      return true; // 不使用LLM时总是返回true
+    }
+    
+    return llmProvider != null && 
+           llmProvider!.isNotEmpty && 
+           llmApiKey != null && 
+           llmApiKey!.isNotEmpty;
+  }
 
   /// 获取当前有效的LLM提供商列表
   static List<String> get availableLLMProviders {
     return ['siliconflow', 'deepseek']; // 后续在第二阶段扩展
+  }
+
+  /// 获取指定提供商支持的模型列表
+  static List<String> getAvailableModels(String provider) {
+    switch (provider) {
+      case 'siliconflow':
+        return [
+          'Qwen/Qwen2.5-72B-Instruct',
+          'deepseek-ai/DeepSeek-V3',
+          'Qwen/Qwen2.5-32B-Instruct',
+          'Qwen/Qwen2.5-14B-Instruct',
+          'Qwen/Qwen2.5-7B-Instruct',
+        ];
+      case 'deepseek':
+        return [
+          'deepseek-chat',
+          'deepseek-reasoner',
+        ];
+      default:
+        return [];
+    }
+  }
+
+  /// 获取指定提供商的默认模型
+  static String getDefaultModel(String provider) {
+    switch (provider) {
+      case 'siliconflow':
+        return 'deepseek-ai/DeepSeek-V3'; // 用户反馈中提到的推荐模型
+      case 'deepseek':
+        return 'deepseek-chat';
+      default:
+        return '';
+    }
+  }
+
+  /// 获取模型显示名称（用于UI展示）
+  static String getModelDisplayName(String provider, String model) {
+    switch (provider) {
+      case 'siliconflow':
+        final modelName = model.split('/').last; // 去除命名空间前缀
+        return 'SiliconFlow - $modelName';
+      case 'deepseek':
+        return 'DeepSeek - ${model.replaceAll('deepseek-', '').replaceAll('-', ' ').toUpperCase()}';
+      default:
+        return '$provider - $model';
+    }
   }
 
   @override

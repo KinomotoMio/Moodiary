@@ -375,6 +375,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 llmProvider: value,
                 // 清除API密钥，需要重新输入
                 llmApiKey: null,
+                // 设置新提供商的默认模型
+                llmModel: AppSettings.getDefaultModel(value),
               );
               try {
                 await _settingsService.updateSettings(newSettings);
@@ -431,12 +433,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
           initialValue: hasApiKey ? '••••••••••••••••' : '',
         ),
         if (currentSettings.llmProvider != null) ...[
+          const SizedBox(height: 16),
+          _buildModelSelector(currentSettings),
           const SizedBox(height: 8),
           Text(
             _getProviderHelpText(currentSettings.llmProvider!),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ],
+    );
+  }
+
+  /// 模型选择器
+  Widget _buildModelSelector(AppSettings currentSettings) {
+    final provider = currentSettings.llmProvider!;
+    final availableModels = AppSettings.getAvailableModels(provider);
+    final currentModel = currentSettings.llmModel ?? AppSettings.getDefaultModel(provider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '模型选择',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: availableModels.contains(currentModel) ? currentModel : null,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: '选择AI模型',
+          ),
+          items: availableModels.map((model) {
+            return DropdownMenuItem<String>(
+              value: model,
+              child: Text(
+                AppSettings.getModelDisplayName(provider, model),
+                style: Theme.of(context).textTheme.bodyMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+          onChanged: (String? value) async {
+            if (value != null) {
+              final newSettings = currentSettings.copyWith(llmModel: value);
+              try {
+                await _settingsService.updateSettings(newSettings);
+                // 重置API测试状态，因为模型配置发生了变化
+                setState(() {
+                  _strategyStatus = null;
+                });
+                _showSuccessSnackBar('AI模型已更新为 ${AppSettings.getModelDisplayName(provider, value)}');
+              } catch (e) {
+                _showErrorSnackBar('更新模型失败: $e');
+              }
+            }
+          },
+        ),
       ],
     );
   }
