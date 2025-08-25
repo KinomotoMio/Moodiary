@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood_fragment.dart';
@@ -220,26 +223,69 @@ class FragmentCard extends StatelessWidget {
             margin: const EdgeInsets.only(right: 8),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.file(
-                File(media.filePath),
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Icon(
-                      Icons.broken_image_outlined,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
+              child: _buildImage(media.filePath),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // 根据平台构建图片Widget
+  Widget _buildImage(String filePath) {
+    if (kIsWeb && filePath.startsWith('data:')) {
+      // Web平台：使用data URI
+      try {
+        final base64Data = filePath.split(',')[1];
+        final bytes = base64Decode(base64Data);
+        return Image.memory(
+          bytes,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 80,
+              height: 80,
+              color: Colors.grey[300],
+              child: const Icon(
+                Icons.broken_image_outlined,
+                color: Colors.grey,
               ),
+            );
+          },
+        );
+      } catch (e) {
+        return Container(
+          width: 80,
+          height: 80,
+          color: Colors.grey[300],
+          child: const Icon(
+            Icons.broken_image_outlined,
+            color: Colors.grey,
+          ),
+        );
+      }
+    } else {
+      // 移动平台：使用文件路径
+      return Image.file(
+        File(filePath),
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 80,
+            height: 80,
+            color: Colors.grey[300],
+            child: const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.grey,
             ),
           );
         },
-      ),
-    );
+      );
+    }
   }
 
   Widget _buildTopicTags(BuildContext context) {

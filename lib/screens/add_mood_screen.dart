@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -313,12 +316,7 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(image.path),
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                            ),
+                            child: _buildPreviewImage(image),
                           ),
                           Positioned(
                             right: 4,
@@ -532,23 +530,62 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
     return _textController.text.trim().isNotEmpty && !_isAnalyzing;
   }
   
-  // 选择图片
+  // 选择图片 - Web平台适配版本
   Future<void> _pickImages() async {
     try {
-      final List<XFile> images = await _imagePicker.pickMultiImage(
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
-      );
-      
-      if (images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(images);
-          // 限制最多9张图片
-          if (_selectedImages.length > 9) {
-            _selectedImages = _selectedImages.take(9).toList();
+      if (kIsWeb) {
+        // Web平台：限制图片数量和大小
+        final List<XFile> images = await _imagePicker.pickMultiImage(
+          maxWidth: 800,  // Web版降低分辨率以节省localStorage空间
+          maxHeight: 600,
+          imageQuality: 70,
+        );
+        
+        if (images.isNotEmpty) {
+          // Web平台检查图片大小限制
+          List<XFile> validImages = [];
+          for (var image in images) {
+            final bytes = await image.readAsBytes();
+            // 限制单张图片不超过500KB（Base64后约700KB）
+            if (bytes.length <= 500 * 1024) {
+              validImages.add(image);
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('图片 ${image.name} 过大，已跳过（Web版限制500KB）')),
+              );
+            }
           }
-        });
+          
+          setState(() {
+            _selectedImages.addAll(validImages);
+            // Web版限制最多6张图片以避免localStorage溢出
+            if (_selectedImages.length > 6) {
+              _selectedImages = _selectedImages.take(6).toList();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Web版最多支持6张图片')),
+                );
+              }
+            }
+          });
+        }
+      } else {
+        // 移动平台：原有逻辑
+        final List<XFile> images = await _imagePicker.pickMultiImage(
+          maxWidth: 1920,
+          maxHeight: 1080,
+          imageQuality: 85,
+        );
+        
+        if (images.isNotEmpty) {
+          setState(() {
+            _selectedImages.addAll(images);
+            // 限制最多9张图片
+            if (_selectedImages.length > 9) {
+              _selectedImages = _selectedImages.take(9).toList();
+            }
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -571,31 +608,116 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
     if (_selectedImages.isEmpty) return [];
     
     final List<MediaAttachment> attachments = [];
-    final appDir = await getApplicationDocumentsDirectory();
-    final imageDir = Directory(path.join(appDir.path, 'mood_images'));
     
-    if (!await imageDir.exists()) {
-      await imageDir.create(recursive: true);
-    }
-    
-    for (int i = 0; i < _selectedImages.length; i++) {
-      final image = _selectedImages[i];
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final extension = path.extension(image.name);
-      final fileName = '${timestamp}_$i$extension';
-      final localPath = path.join(imageDir.path, fileName);
+    if (kIsWeb) {
+      // Web平台：使用Base64编码存储
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final image = _selectedImages[i];
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        
+        try {
+          final bytes = await image.readAsBytes();
+          final base64String = base64Encode(bytes);
+          final extension = path.extension(image.name).toLowerCase();
+          
+          // 生成Web兼容的标识符（使用data URI格式）
+          final mimeType = _getMimeType(extension);
+          final dataUri = 'data:$mimeType;base64,$base64String';
+          
+          attachments.add(MediaAttachment(
+            id: '${timestamp}_$i',
+            filePath: dataUri, // Web平台存储data URI
+            type: MediaType.image,
+            createdAt: DateTime.now(),
+          ));
+        } catch (e) {
+          if (kDebugMode) {
+            print('Web平台图片处理失败: $e');
+          }
+        }
+      }
+    } else {
+      // 移动平台：原有文件系统逻辑
+      final appDir = await getApplicationDocumentsDirectory();
+      final imageDir = Directory(path.join(appDir.path, 'mood_images'));
       
-      await File(image.path).copy(localPath);
+      if (!await imageDir.exists()) {
+        await imageDir.create(recursive: true);
+      }
       
-      attachments.add(MediaAttachment(
-        id: '${timestamp}_$i',
-        filePath: localPath,
-        type: MediaType.image,
-        createdAt: DateTime.now(),
-      ));
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final image = _selectedImages[i];
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final extension = path.extension(image.name);
+        final fileName = '${timestamp}_$i$extension';
+        final localPath = path.join(imageDir.path, fileName);
+        
+        await File(image.path).copy(localPath);
+        
+        attachments.add(MediaAttachment(
+          id: '${timestamp}_$i',
+          filePath: localPath,
+          type: MediaType.image,
+          createdAt: DateTime.now(),
+        ));
+      }
     }
     
     return attachments;
+  }
+  
+  // 获取MIME类型
+  String _getMimeType(String extension) {
+    switch (extension) {
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.gif':
+        return 'image/gif';
+      case '.webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
+  }
+
+  // 构建预览图片Widget
+  Widget _buildPreviewImage(XFile image) {
+    if (kIsWeb) {
+      // Web平台：使用网络图片
+      return FutureBuilder<Uint8List>(
+        future: image.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Image.memory(
+              snapshot.data!,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            );
+          } else {
+            return Container(
+              width: 80,
+              height: 80,
+              color: Colors.grey[300],
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+        },
+      );
+    } else {
+      // 移动平台：使用文件路径
+      return Image.file(
+        File(image.path),
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+      );
+    }
   }
 
   Future<void> _analyzeEmotion() async {
