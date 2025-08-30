@@ -67,7 +67,7 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
             ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,6 +77,8 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
             if (_analysisResult != null) _buildAnalysisCard(),
             if (_analysisResult != null) const SizedBox(height: 16),
             if (_analysisResult != null) _buildAdviceCard(),
+            // 添加底部额外空间，避免内容贴底
+            const SizedBox(height: 24),
           ],
         ),
       ),
