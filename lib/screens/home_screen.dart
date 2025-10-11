@@ -12,7 +12,7 @@ import 'mood_detail_screen.dart';
 import 'settings_screen.dart';
 import 'bedtime_reading_screen.dart';
 import 'insight_report_screen.dart';
-import 'conversational_record_screen.dart';
+import 'conversation_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -552,10 +552,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () async {
           final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
-              builder: (context) => const ConversationalRecordScreen(),
+              builder: (context) => const ConversationHistoryScreen(),
             ),
           );
-          // 如果成功保存了记录，刷新数据
+          // 如果有会话数据变更，刷新主界面数据
           if (result == true) {
             _loadData();
           }

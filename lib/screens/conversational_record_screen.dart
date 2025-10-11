@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../models/conversation_history.dart';
 import '../services/conversational_record_service.dart';
+import '../services/conversation_storage_service.dart';
 import '../services/llm/tool_calling.dart';
 
 /// 对话式心情记录界面
 ///
 /// 通过与AI助手对话，引导用户自然地表达和记录心情
 class ConversationalRecordScreen extends StatefulWidget {
-  const ConversationalRecordScreen({super.key});
+  /// 会话ID（如果恢复已有会话）
+  final String? conversationId;
+
+  /// 是否为临时会话（退出后删除）
+  final bool isTemporary;
+
+  const ConversationalRecordScreen({
+    super.key,
+    this.conversationId,
+    this.isTemporary = false,
+  });
 
   @override
   State<ConversationalRecordScreen> createState() =>
@@ -19,7 +31,11 @@ class _ConversationalRecordScreenState
     extends State<ConversationalRecordScreen> {
   final ConversationalRecordService _service =
       ConversationalRecordService.instance;
+  final ConversationStorageService _storage =
+      ConversationStorageService.instance;
+
   late final ConversationSession _session;
+  late ConversationHistory _conversationHistory;
 
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -27,20 +43,104 @@ class _ConversationalRecordScreenState
 
   bool _isProcessing = false;
   bool _isComplete = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _session = _service.startNewSession();
-    _sendInitialGreeting();
+    _initializeConversation();
   }
 
   @override
   void dispose() {
+    _handleDispose();
     _inputController.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  /// 初始化会话
+  Future<void> _initializeConversation() async {
+    setState(() => _isLoading = true);
+
+    try {
+      if (widget.conversationId != null) {
+        // 加载已有会话
+        final existingConversation = await _storage.getConversation(widget.conversationId!);
+        if (existingConversation != null) {
+          _conversationHistory = existingConversation;
+          _session = _service.startNewSession();
+          // 恢复会话消息
+          for (final message in existingConversation.messages) {
+            _session.addMessage(message);
+          }
+          _isComplete = existingConversation.isComplete;
+        } else {
+          // 会话不存在，创建新会话
+          _createNewConversation();
+        }
+      } else {
+        // 创建新会话
+        _createNewConversation();
+      }
+
+      setState(() => _isLoading = false);
+
+      // 如果是新会话，发送初始问候
+      if (widget.conversationId == null) {
+        _sendInitialGreeting();
+      } else {
+        _scrollToBottom();
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showError('初始化会话失败：$e');
+      }
+    }
+  }
+
+  /// 创建新会话
+  void _createNewConversation() {
+    _conversationHistory = ConversationHistory.create(
+      isTemporary: widget.isTemporary,
+    );
+    _session = _service.startNewSession();
+  }
+
+  /// 处理退出
+  Future<void> _handleDispose() async {
+    if (widget.isTemporary) {
+      // 临时会话：删除
+      await _storage.deleteConversation(_conversationHistory.id);
+    } else {
+      // 非临时会话：保存
+      await _saveConversation();
+    }
+  }
+
+  /// 保存会话
+  Future<void> _saveConversation() async {
+    try {
+      // 如果标题仍是"新对话"，生成智能标题
+      String title = _conversationHistory.title;
+      if (title == '新对话' && _session.messages.isNotEmpty) {
+        title = _conversationHistory.copyWith(messages: _session.messages).generateSmartTitle();
+      }
+
+      final updatedConversation = _conversationHistory.copyWith(
+        title: title,
+        messages: _session.messages,
+        isComplete: _isComplete,
+        extractedData: _session.extractedData?.toJson(),
+      );
+
+      await _storage.saveConversation(updatedConversation);
+      _conversationHistory = updatedConversation;
+    } catch (e) {
+      debugPrint('Failed to save conversation: $e');
+    }
   }
 
   /// 发送初始问候
@@ -57,6 +157,9 @@ class _ConversationalRecordScreenState
         _isProcessing = false;
         _isComplete = response.isComplete;
       });
+
+      // 自动保存会话
+      await _saveConversation();
 
       _scrollToBottom();
     } catch (e) {
@@ -85,6 +188,9 @@ class _ConversationalRecordScreenState
         _isProcessing = false;
         _isComplete = response.isComplete;
       });
+
+      // 自动保存会话
+      await _saveConversation();
 
       _scrollToBottom();
 
@@ -148,21 +254,39 @@ class _ConversationalRecordScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('对话记录心情'),
+        title: Text(widget.conversationId != null
+            ? _conversationHistory.title
+            : '对话记录心情'),
         centerTitle: true,
         elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // 对话历史区域
-          Expanded(
-            child: _buildMessageList(colorScheme),
-          ),
-
-          // 输入区域
-          _buildInputArea(theme, colorScheme),
+        actions: [
+          if (widget.isTemporary)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Chip(
+                label: const Text(
+                  '临时',
+                  style: TextStyle(fontSize: 12),
+                ),
+                backgroundColor: colorScheme.secondaryContainer,
+                side: BorderSide.none,
+              ),
+            ),
         ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // 对话历史区域
+                Expanded(
+                  child: _buildMessageList(colorScheme),
+                ),
+
+                // 输入区域
+                _buildInputArea(theme, colorScheme),
+              ],
+            ),
     );
   }
 
