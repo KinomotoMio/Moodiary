@@ -153,7 +153,10 @@ class ChatMessage {
   }
 
   Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{'role': role};
+    final json = <String, dynamic>{
+      'role': role,
+      'timestamp': timestamp.toIso8601String(), // 添加时间戳序列化
+    };
 
     if (content != null) {
       json['content'] = content;
@@ -192,12 +195,19 @@ class ChatMessage {
       toolCalls = calls.map((c) => ToolCall.fromJson(c as Map<String, dynamic>)).toList();
     }
 
+    // 解析时间戳，如果没有则使用当前时间
+    DateTime? timestamp;
+    if (json.containsKey('timestamp')) {
+      timestamp = DateTime.parse(json['timestamp'] as String);
+    }
+
     return ChatMessage(
       role: role,
       content: content,
       toolCalls: toolCalls,
       toolCallId: json['tool_call_id'] as String?,
       name: json['name'] as String?,
+      timestamp: timestamp,
     );
   }
 }
