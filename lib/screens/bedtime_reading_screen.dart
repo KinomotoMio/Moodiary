@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/daily_summary.dart';
 import '../services/daily_summary_service.dart';
+import '../widgets/impression_image_banner.dart';
 
 /// 睡前阅读页面
 ///
@@ -215,6 +216,8 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildDateHeader(),
+              const SizedBox(height: 24),
+              _buildImpressionBanner(),
               const SizedBox(height: 32),
               _buildEventSummarySection(),
               const SizedBox(height: 32),
@@ -269,6 +272,18 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildImpressionBanner() {
+    // 生成情绪数据摘要
+    final dateStr = DateFormat('MM月dd日', 'zh_CN').format(_todaySummary!.date);
+    final emotionSummary = '${_todaySummary!.emotionReview.substring(0, _todaySummary!.emotionReview.length > 50 ? 50 : _todaySummary!.emotionReview.length)}...';
+
+    return ImpressionImageBanner(
+      emotionSummary: emotionSummary,
+      timeRange: dateStr,
+      height: 180,
     );
   }
 

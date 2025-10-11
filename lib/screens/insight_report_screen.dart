@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/insight_report.dart';
 import '../models/mood_entry.dart';
 import '../services/insight_report_service.dart';
+import '../widgets/impression_image_banner.dart';
 
 /// 心理洞察报告主屏幕
 ///
@@ -659,6 +660,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildImpressionBanner(),
+              const SizedBox(height: 24),
               _buildStatsOverview(),
               const SizedBox(height: 32),
               _buildCoreInsightSection(),
@@ -672,6 +675,18 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImpressionBanner() {
+    // 生成情绪数据摘要
+    final stats = _report.stats;
+    final emotionSummary = '平均情绪分${stats.averageScore.toStringAsFixed(1)}，${stats.dominantMood?.displayName ?? "情绪多样"}为主，${stats.totalEntries}条记录';
+
+    return ImpressionImageBanner(
+      emotionSummary: emotionSummary,
+      timeRange: _report.dateRangeDescription,
+      height: 200,
     );
   }
 
