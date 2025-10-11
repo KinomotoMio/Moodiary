@@ -4,6 +4,7 @@ import 'timeline_screen.dart';
 import 'history_screen.dart';
 import 'analytics_screen.dart';
 import 'topic_tags_screen.dart';
+import 'bedtime_reading_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -32,6 +33,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       const AnalyticsScreen(),
       const TopicTagsScreen(),
+      const BedtimeReadingScreen(),
     ];
   }
 
@@ -74,6 +76,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.tag_outlined),
             selectedIcon: Icon(Icons.tag),
             label: '标签',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bedtime_outlined),
+            selectedIcon: Icon(Icons.bedtime),
+            label: '睡前',
           ),
         ],
       ),

@@ -10,6 +10,7 @@ import '../events/app_events.dart';
 import 'add_mood_screen.dart';
 import 'mood_detail_screen.dart';
 import 'settings_screen.dart';
+import 'bedtime_reading_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -230,6 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     _buildStatisticsCard(),
                     const SizedBox(height: 24),
+                    _buildBedtimeCard(),
+                    const SizedBox(height: 24),
                     _buildRecentEntriesSection(),
                   ],
                 ),
@@ -414,6 +417,69 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBedtimeCard() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final isBedtime = hour >= 21 || hour < 6; // 晚上9点到早上6点
+
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const BedtimeReadingScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.bedtime,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isBedtime ? '睡前阅读 · 今日回顾' : '今日回顾',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isBedtime
+                        ? '回顾今天的经历，放松心情，准备入眠'
+                        : '查看AI生成的今日情绪总结',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
