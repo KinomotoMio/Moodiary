@@ -11,6 +11,7 @@ import 'add_mood_screen.dart';
 import 'mood_detail_screen.dart';
 import 'settings_screen.dart';
 import 'bedtime_reading_screen.dart';
+import 'insight_report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -232,6 +233,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildStatisticsCard(),
                     const SizedBox(height: 24),
                     _buildBedtimeCard(),
+                    const SizedBox(height: 16),
+                    _buildInsightReportCard(),
                     const SizedBox(height: 24),
                     _buildRecentEntriesSection(),
                   ],
@@ -465,6 +468,63 @@ class _HomeScreenState extends State<HomeScreen> {
                       isBedtime
                         ? '回顾今天的经历，放松心情，准备入眠'
                         : '查看AI生成的今日情绪总结',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInsightReportCard() {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const InsightReportScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7e57c2).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.psychology,
+                  color: Color(0xFF7e57c2),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '心理洞察报告',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '基于CBT框架的深度情绪分析',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),

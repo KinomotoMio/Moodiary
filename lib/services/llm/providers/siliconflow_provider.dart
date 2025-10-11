@@ -3,12 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'base_llm_provider.dart';
 
 /// SiliconFlow LLM提供商实现
-/// 
+///
 /// SiliconFlow提供兼容OpenAI格式的API服务
 /// API文档: https://docs.siliconflow.cn/cn/api-reference/chat-completions/chat-completions
 class SiliconFlowProvider implements BaseLLMProvider {
   static const String _baseUrl = 'https://api.siliconflow.cn/v1';
-  static const int _defaultTimeoutMs = 30000; // 30秒超时
+  static const int _defaultTimeoutMs = 120000; // 120秒超时（针对长文本生成）
   
   late final Dio _dio;
   

@@ -5,6 +5,7 @@ import 'services/storage_service.dart';
 import 'services/fragment_storage_service.dart';
 import 'services/settings_service.dart';
 import 'services/daily_summary_service.dart';
+import 'services/insight_report_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,7 @@ void main() async {
   await FragmentStorageService.instance.initialize();
   await SettingsService.instance.initialize();
   await DailySummaryService.instance.initialize();
+  await InsightReportService.instance.initialize();
 
   runApp(const MoodiaryApp());
 }
