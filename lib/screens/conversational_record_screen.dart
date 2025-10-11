@@ -5,6 +5,7 @@ import '../models/conversation_history.dart';
 import '../services/conversational_record_service.dart';
 import '../services/conversation_storage_service.dart';
 import '../services/llm/tool_calling.dart';
+import '../services/speech_service.dart';
 
 /// 对话式心情记录界面
 ///
@@ -33,6 +34,7 @@ class _ConversationalRecordScreenState
       ConversationalRecordService.instance;
   final ConversationStorageService _storage =
       ConversationStorageService.instance;
+  final SpeechService _speechService = SpeechService.instance;
 
   late final ConversationSession _session;
   late ConversationHistory _conversationHistory;
@@ -44,11 +46,13 @@ class _ConversationalRecordScreenState
   bool _isProcessing = false;
   bool _isComplete = false;
   bool _isLoading = true;
+  bool _isListening = false;
 
   @override
   void initState() {
     super.initState();
     _initializeConversation();
+    _initializeSpeech();
   }
 
   @override
@@ -57,7 +61,13 @@ class _ConversationalRecordScreenState
     _inputController.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
+    _speechService.dispose();
     super.dispose();
+  }
+
+  /// 初始化语音识别
+  Future<void> _initializeSpeech() async {
+    await _speechService.initialize();
   }
 
   /// 初始化会话
@@ -244,6 +254,50 @@ class _ConversationalRecordScreenState
       if (mounted) {
         Navigator.of(context).pop(true); // 返回true表示成功保存
       }
+    });
+  }
+
+  /// 开始语音识别
+  Future<void> _startListening() async {
+    if (_isComplete || _isProcessing) return;
+
+    // 保存按下录音按钮时的文本内容
+    final originalText = _inputController.text;
+
+    final success = await _speechService.startListening(
+      onResult: (text) {
+        setState(() {
+          // 追加模式：在原有文本后面追加识别结果
+          _inputController.text = originalText.isEmpty
+              ? text
+              : '$originalText $text';
+        });
+      },
+      onFinalResult: (text) {
+        setState(() {
+          _isListening = false;
+          // 追加模式：在原有文本后面追加最终结果
+          _inputController.text = originalText.isEmpty
+              ? text
+              : '$originalText $text';
+        });
+      },
+    );
+
+    if (success) {
+      setState(() => _isListening = true);
+    } else {
+      if (mounted) {
+        _showError('无法启动语音识别，请检查麦克风权限');
+      }
+    }
+  }
+
+  /// 停止语音识别
+  Future<void> _stopListening() async {
+    await _speechService.stopListening();
+    setState(() {
+      _isListening = false;
     });
   }
 
@@ -554,6 +608,30 @@ class _ConversationalRecordScreenState
                   ),
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // 麦克风按钮
+            GestureDetector(
+              onLongPressStart: (_) => _startListening(),
+              onLongPressEnd: (_) => _stopListening(),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _isListening
+                      ? colorScheme.error
+                      : colorScheme.secondaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isListening ? Icons.mic : Icons.mic_none,
+                  color: _isListening
+                      ? colorScheme.onError
+                      : colorScheme.onSecondaryContainer,
                 ),
               ),
             ),
