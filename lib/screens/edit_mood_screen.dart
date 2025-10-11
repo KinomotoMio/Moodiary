@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
 import '../services/fragment_storage_service.dart';
 import '../services/emotion_service.dart';
+import '../services/speech_service.dart';
 
 class EditMoodScreen extends StatefulWidget {
   final MoodEntry entry;
@@ -19,9 +20,12 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
   final TextEditingController _textController = TextEditingController();
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final EmotionService _emotionService = EmotionService.instance;
-  
+  final SpeechService _speechService = SpeechService.instance;
+
   bool _isAnalyzing = false;
   bool _isSaving = false;
+  // ignore: unused_field
+  bool _isListening = false;
   EmotionAnalysisResult? _analysisResult;
   int _characterCount = 0;
   bool _hasChanges = false;
@@ -29,10 +33,11 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeSpeech();
     // 预填充现有内容
     _textController.text = widget.entry.content;
     _characterCount = widget.entry.content.length;
-    
+
     // 使用现有的分析结果
     _analysisResult = EmotionAnalysisResult(
       moodType: widget.entry.mood,
@@ -44,6 +49,7 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
   @override
   void dispose() {
     _textController.dispose();
+    _speechService.dispose();
     super.dispose();
   }
 
@@ -112,7 +118,7 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
               controller: _textController,
               maxLines: 8,
               decoration: InputDecoration(
-                hintText: '记录下你的想法、感受或今天发生的事情...\\n\\n你可以写下：\\n• 今天的心情如何\\n• 遇到了什么事情\\n• 有什么感想或想法',
+                hintText: '记录下你的想法、感受或今天发生的事情...\n\n你可以写下：\n• 今天的心情如何\n• 遇到了什么事情\n• 有什么感想或想法',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -120,6 +126,37 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
                 filled: true,
                 fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 contentPadding: const EdgeInsets.all(16),
+                // TODO: 语音输入按钮待优化布局后恢复
+                // suffixIcon: Padding(
+                //   padding: const EdgeInsets.only(right: 8, top: 8),
+                //   child: Align(
+                //     alignment: Alignment.topRight,
+                //     child: Tooltip(
+                //       message: '长按语音输入',
+                //       child: GestureDetector(
+                //         onLongPressStart: (_) => _startListening(),
+                //         onLongPressEnd: (_) => _stopListening(),
+                //         child: Container(
+                //           width: 40,
+                //           height: 40,
+                //           decoration: BoxDecoration(
+                //             color: _isListening
+                //                 ? Theme.of(context).colorScheme.error
+                //                 : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                //             shape: BoxShape.circle,
+                //           ),
+                //           child: Icon(
+                //             _isListening ? Icons.mic : Icons.mic_none_outlined,
+                //             color: _isListening
+                //                 ? Theme.of(context).colorScheme.onError
+                //                 : Theme.of(context).colorScheme.primary,
+                //             size: 20,
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ),
               onChanged: (text) {
                 setState(() {
@@ -317,6 +354,63 @@ class _EditMoodScreenState extends State<EditMoodScreen> {
 
   bool _canAnalyze() {
     return _textController.text.trim().isNotEmpty && !_isAnalyzing;
+  }
+
+  /// 初始化语音识别
+  Future<void> _initializeSpeech() async {
+    await _speechService.initialize();
+  }
+
+  /// 开始语音识别
+  // ignore: unused_element
+  Future<void> _startListening() async {
+    if (_isAnalyzing || _isSaving) return;
+
+    // 保存按下录音按钮时的文本内容
+    final originalText = _textController.text;
+
+    final success = await _speechService.startListening(
+      onResult: (text) {
+        setState(() {
+          // 追加模式：在原有文本后面追加识别结果
+          _textController.text = originalText.isEmpty
+              ? text
+              : '$originalText $text';
+          _characterCount = _textController.text.length;
+          _hasChanges = true;
+        });
+      },
+      onFinalResult: (text) {
+        setState(() {
+          _isListening = false;
+          // 追加模式：在原有文本后面追加最终结果
+          _textController.text = originalText.isEmpty
+              ? text
+              : '$originalText $text';
+          _characterCount = _textController.text.length;
+          _hasChanges = true;
+        });
+      },
+    );
+
+    if (success) {
+      setState(() => _isListening = true);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('无法启动语音识别，请检查麦克风权限')),
+        );
+      }
+    }
+  }
+
+  /// 停止语音识别
+  // ignore: unused_element
+  Future<void> _stopListening() async {
+    await _speechService.stopListening();
+    setState(() {
+      _isListening = false;
+    });
   }
 
   Future<void> _analyzeEmotion() async {
