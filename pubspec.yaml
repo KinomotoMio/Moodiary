@@ -37,8 +37,8 @@ dependencies:
   
   # Core dependencies for Moodiary MVP
   shared_preferences: ^2.2.3  # 本地存储
-  intl: ^0.19.0               # 日期格式化
-  fl_chart: ^0.69.0           # 数据可视化图表
+  intl: ^0.20.2               # 日期格式化
+  fl_chart: ^1.1.0           # 数据可视化图表
   event_bus: ^2.0.0           # 事件总线
   
   # Multi-media support
@@ -48,7 +48,12 @@ dependencies:
   
   # Network and API
   dio: ^5.4.1                 # HTTP客户端
+  http: ^1.2.0                # HTTP请求（用于印象画生成）
   url_launcher: ^6.2.4        # 外部链接启动
+  speech_to_text: ^7.0.0      # 语音转文字
+  flutter_local_notifications: ^18.0.1  # 本地通知
+  permission_handler: ^11.3.1  # 权限管理
+  timezone: ^0.9.4            # 时区处理（用于定时通知）
 
 dev_dependencies:
   flutter_test:
@@ -59,7 +64,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
