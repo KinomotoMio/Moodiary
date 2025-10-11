@@ -12,6 +12,7 @@ import 'mood_detail_screen.dart';
 import 'settings_screen.dart';
 import 'bedtime_reading_screen.dart';
 import 'insight_report_screen.dart';
+import 'conversational_record_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -235,6 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildBedtimeCard(),
                     const SizedBox(height: 16),
                     _buildInsightReportCard(),
+                    const SizedBox(height: 16),
+                    _buildConversationalRecordCard(),
                     const SizedBox(height: 24),
                     _buildRecentEntriesSection(),
                   ],
@@ -525,6 +528,69 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '基于CBT框架的深度情绪分析',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConversationalRecordCard() {
+    return Card(
+      child: InkWell(
+        onTap: () async {
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (context) => const ConversationalRecordScreen(),
+            ),
+          );
+          // 如果成功保存了记录，刷新数据
+          if (result == true) {
+            _loadData();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF42a5f5).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Color(0xFF42a5f5),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '对话式记录',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '通过AI对话，轻松记录和整理心情',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
