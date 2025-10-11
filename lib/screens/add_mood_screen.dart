@@ -10,6 +10,7 @@ import '../models/mood_fragment.dart';
 import '../services/fragment_storage_service.dart';
 import '../services/emotion_service.dart';
 import '../services/smart_tag_extractor_service.dart';
+import '../services/speech_service.dart';
 import '../utils/tag_utils.dart';
 import '../widgets/smart_tag_suggestions.dart';
 
@@ -25,10 +26,13 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   final EmotionService _emotionService = EmotionService.instance;
   final SmartTagExtractorService _smartTagExtractor = SmartTagExtractorService.instance;
+  final SpeechService _speechService = SpeechService.instance;
   final ImagePicker _imagePicker = ImagePicker();
   
   bool _isAnalyzing = false;
   bool _isSaving = false;
+  // ignore: unused_field
+  bool _isListening = false;
   EmotionAnalysisResult? _analysisResult;
   int _characterCount = 0;
   String? _validationMessage;
@@ -45,12 +49,14 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+    _initializeSpeech();
   }
   
   @override
   void dispose() {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
+    _speechService.dispose();
     super.dispose();
   }
   
@@ -139,6 +145,59 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
     );
   }
 
+  /// 初始化语音识别
+  Future<void> _initializeSpeech() async {
+    await _speechService.initialize();
+  }
+
+  /// 开始语音识别
+  // ignore: unused_element
+  Future<void> _startListening() async {
+    if (_isAnalyzing || _isSaving) return;
+
+    // 保存按下录音按钮时的文本内容
+    final originalText = _textController.text;
+
+    final success = await _speechService.startListening(
+      onResult: (text) {
+        setState(() {
+          // 追加模式：在原有文本后面追加识别结果
+          _textController.text = originalText.isEmpty
+              ? text
+              : '$originalText $text';
+        });
+      },
+      onFinalResult: (text) {
+        setState(() {
+          _isListening = false;
+          // 追加模式：在原有文本后面追加最终结果
+          _textController.text = originalText.isEmpty
+              ? text
+              : '$originalText $text';
+        });
+      },
+    );
+
+    if (success) {
+      setState(() => _isListening = true);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('无法启动语音识别，请检查麦克风权限')),
+        );
+      }
+    }
+  }
+
+  /// 停止语音识别
+  // ignore: unused_element
+  Future<void> _stopListening() async {
+    await _speechService.stopListening();
+    setState(() {
+      _isListening = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -212,6 +271,37 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
                 filled: true,
                 fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 contentPadding: const EdgeInsets.all(16),
+                // TODO: 语音输入按钮待优化布局后恢复
+                // suffixIcon: Padding(
+                //   padding: const EdgeInsets.only(right: 8, top: 8),
+                //   child: Align(
+                //     alignment: Alignment.topRight,
+                //     child: Tooltip(
+                //       message: '长按语音输入',
+                //       child: GestureDetector(
+                //         onLongPressStart: (_) => _startListening(),
+                //         onLongPressEnd: (_) => _stopListening(),
+                //         child: Container(
+                //           width: 40,
+                //           height: 40,
+                //           decoration: BoxDecoration(
+                //             color: _isListening
+                //                 ? Theme.of(context).colorScheme.error
+                //                 : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                //             shape: BoxShape.circle,
+                //           ),
+                //           child: Icon(
+                //             _isListening ? Icons.mic : Icons.mic_none_outlined,
+                //             color: _isListening
+                //                 ? Theme.of(context).colorScheme.onError
+                //                 : Theme.of(context).colorScheme.primary,
+                //             size: 20,
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ),
               onChanged: (text) {
                 setState(() {
@@ -346,7 +436,7 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
             ],
             
             const SizedBox(height: 16),
-            
+
             // 操作按钮行
             Row(
               children: [
