@@ -542,6 +542,15 @@ class ExtractedMoodData {
     required this.content,
     required this.topicTags,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'moodType': moodType.name,
+      'emotionScore': emotionScore,
+      'content': content,
+      'topicTags': topicTags,
+    };
+  }
 }
 
 /// 对话响应

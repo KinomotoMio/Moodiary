@@ -17,10 +17,13 @@ abstract class AppEvent {
 /// 心情数据变化事件 - 当心情记录发生任何变化时触发
 class MoodDataChangedEvent extends AppEvent {}
 
+/// 会话数据变化事件 - 当对话会话发生任何变化时触发
+class ConversationDataChangedEvent extends AppEvent {}
+
 /// 心情记录添加事件
 class MoodEntryAddedEvent extends AppEvent {
   final MoodEntry entry;
-  
+
   MoodEntryAddedEvent(this.entry);
 }
 
