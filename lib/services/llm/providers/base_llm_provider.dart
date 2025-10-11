@@ -24,12 +24,12 @@ abstract class BaseLLMProvider {
   List<String> get supportedModels;
   
   /// 调用LLM API进行文本生成
-  /// 
+  ///
   /// [prompt] 输入的提示词
   /// [model] 使用的模型名称，为null时使用默认模型
   /// [apiKey] API密钥，某些提供商需要
   /// [parameters] 额外的API参数
-  /// 
+  ///
   /// 返回生成的文本内容
   Future<String> generateText({
     required String prompt,
@@ -37,7 +37,26 @@ abstract class BaseLLMProvider {
     String? apiKey,
     Map<String, dynamic>? parameters,
   });
-  
+
+  /// 调用LLM API进行对话（支持Tool Calling）
+  ///
+  /// [messages] 对话历史消息列表
+  /// [tools] 可调用的工具函数列表
+  /// [model] 使用的模型名称，为null时使用默认模型
+  /// [apiKey] API密钥，某些提供商需要
+  /// [parameters] 额外的API参数
+  ///
+  /// 返回助手的回复消息（可能包含工具调用）
+  Future<Map<String, dynamic>> generateChatWithTools({
+    required List<Map<String, dynamic>> messages,
+    List<Map<String, dynamic>>? tools,
+    String? model,
+    String? apiKey,
+    Map<String, dynamic>? parameters,
+  }) async {
+    throw UnimplementedError('Tool calling not supported by this provider');
+  }
+
   /// 检查API连接状态
   /// 
   /// [apiKey] API密钥

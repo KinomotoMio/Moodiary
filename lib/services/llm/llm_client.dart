@@ -35,7 +35,7 @@ class LLMClient {
   }
   
   /// 调用指定提供商的API
-  /// 
+  ///
   /// [providerName] 提供商名称
   /// [prompt] 输入提示词
   /// [model] 使用的模型，为null时使用默认模型
@@ -52,14 +52,14 @@ class LLMClient {
     if (provider == null) {
       throw LLMException('Unknown provider: $providerName');
     }
-    
+
     if (provider.requiresApiKey && (apiKey == null || apiKey.isEmpty)) {
       throw LLMException(
         'API key required for provider: $providerName',
         providerName: providerName,
       );
     }
-    
+
     try {
       final result = await provider.generateText(
         prompt: prompt,
@@ -67,15 +67,65 @@ class LLMClient {
         apiKey: apiKey,
         parameters: parameters,
       );
-      
+
       if (kDebugMode) {
         debugPrint('LLM call successful: $providerName');
       }
-      
+
       return result;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('LLM call failed: $providerName - $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// 调用指定提供商的对话API（支持Tool Calling）
+  ///
+  /// [providerName] 提供商名称
+  /// [messages] 对话历史消息列表
+  /// [tools] 可调用的工具函数列表
+  /// [model] 使用的模型，为null时使用默认模型
+  /// [apiKey] API密钥
+  /// [parameters] 额外参数
+  Future<Map<String, dynamic>> generateChatWithTools({
+    required String providerName,
+    required List<Map<String, dynamic>> messages,
+    List<Map<String, dynamic>>? tools,
+    String? model,
+    String? apiKey,
+    Map<String, dynamic>? parameters,
+  }) async {
+    final provider = _providers[providerName];
+    if (provider == null) {
+      throw LLMException('Unknown provider: $providerName');
+    }
+
+    if (provider.requiresApiKey && (apiKey == null || apiKey.isEmpty)) {
+      throw LLMException(
+        'API key required for provider: $providerName',
+        providerName: providerName,
+      );
+    }
+
+    try {
+      final result = await provider.generateChatWithTools(
+        messages: messages,
+        tools: tools,
+        model: model,
+        apiKey: apiKey,
+        parameters: parameters,
+      );
+
+      if (kDebugMode) {
+        debugPrint('LLM chat call successful: $providerName');
+      }
+
+      return result;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('LLM chat call failed: $providerName - $e');
       }
       rethrow;
     }

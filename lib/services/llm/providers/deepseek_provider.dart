@@ -59,9 +59,9 @@ class DeepSeekProvider implements BaseLLMProvider {
     if (apiKey == null || apiKey.isEmpty) {
       throw const LLMException('DeepSeek API key is required');
     }
-    
+
     final requestModel = model ?? defaultModel;
-    
+
     final requestData = {
       'model': requestModel,
       'messages': [
@@ -75,7 +75,7 @@ class DeepSeekProvider implements BaseLLMProvider {
       'stream': false,
       ...?parameters,
     };
-    
+
     try {
       final response = await _dio.post(
         '/chat/completions',
@@ -86,20 +86,88 @@ class DeepSeekProvider implements BaseLLMProvider {
           },
         ),
       );
-      
+
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final choices = data['choices'] as List;
-        
+
         if (choices.isNotEmpty) {
           final message = choices[0]['message'] as Map<String, dynamic>;
           final content = message['content'] as String;
-          
+
           if (content.trim().isEmpty) {
             throw const LLMException('Empty response content from DeepSeek');
           }
-          
+
           return content.trim();
+        } else {
+          throw const LLMException('No response choices returned from DeepSeek');
+        }
+      } else {
+        throw LLMException(
+          'DeepSeek API returned status ${response.statusCode}',
+          providerName: name,
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      throw _handleDioException(e);
+    } catch (e) {
+      throw LLMException(
+        'Unexpected error calling DeepSeek: $e',
+        providerName: name,
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> generateChatWithTools({
+    required List<Map<String, dynamic>> messages,
+    List<Map<String, dynamic>>? tools,
+    String? model,
+    String? apiKey,
+    Map<String, dynamic>? parameters,
+  }) async {
+    if (apiKey == null || apiKey.isEmpty) {
+      throw const LLMException('DeepSeek API key is required');
+    }
+
+    final requestModel = model ?? defaultModel;
+
+    // 构建OpenAI兼容的请求数据
+    final requestData = {
+      'model': requestModel,
+      'messages': messages,
+      'max_tokens': 1500,
+      'temperature': 0.7,
+      'stream': false,
+      ...?parameters,
+    };
+
+    // 如果提供了工具，添加到请求中
+    if (tools != null && tools.isNotEmpty) {
+      requestData['tools'] = tools;
+      requestData['tool_choice'] = 'auto';
+    }
+
+    try {
+      final response = await _dio.post(
+        '/chat/completions',
+        data: requestData,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final choices = data['choices'] as List;
+
+        if (choices.isNotEmpty) {
+          final message = choices[0]['message'] as Map<String, dynamic>;
+          return message;
         } else {
           throw const LLMException('No response choices returned from DeepSeek');
         }
