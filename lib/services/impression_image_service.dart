@@ -169,8 +169,9 @@ class ImpressionImageService {
     // SiliconFlow文生图API
     final url = Uri.parse('https://api.siliconflow.cn/v1/images/generations');
 
+    const modelId = 'Qwen/Qwen-Image';
     final primaryPayload = {
-      'model': 'Qwen/Qwen-Image-Edit-2509',
+      'model': modelId,
       'prompt': prompt,
       'negative_prompt': 'low quality, distorted, watermark, text, signature',
       'num_inference_steps': 20,
@@ -196,7 +197,7 @@ class ImpressionImageService {
     }
 
     final fallbackPayload = {
-      'model': 'Qwen/Qwen-Image-Edit-2509',
+      'model': modelId,
       'prompt': prompt,
     };
 

@@ -764,7 +764,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.smart_toy_outlined),
                 title: const Text('文生图模型'),
-                subtitle: const Text('SiliconFlow - Qwen/Qwen-Image-Edit-2509'),
+                subtitle: const Text('SiliconFlow - Qwen/Qwen-Image'),
                 trailing: const Icon(Icons.info_outlined),
                 onTap: () {
                   showDialog(
@@ -773,7 +773,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('文生图API说明'),
                       content: const Text(
                         '当前使用SiliconFlow的文生图服务\n\n'
-                        '模型：Qwen/Qwen-Image-Edit-2509\n'
+                          '模型：Qwen/Qwen-Image\n'
                         'API Key：复用对话模型配置\n\n'
                         '如果AI生成失败，会自动降级到预设图片模式',
                       ),
