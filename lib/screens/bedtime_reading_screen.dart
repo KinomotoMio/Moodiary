@@ -532,7 +532,7 @@ String composeDailyEmotionSummary({
   lines.add('正念引导：${truncateWithEllipsis(summary.meditationGuide)}');
 
   final meaningfulFragments = fragments
-      .where((fragment) => fragment.displayContent.trim().isNotEmpty)
+      .where((fragment) => fragmentContentWithTags(fragment).trim().isNotEmpty)
       .take(3)
       .toList();
 
@@ -541,7 +541,7 @@ String composeDailyEmotionSummary({
     lines.add('代表记录：');
     for (final fragment in meaningfulFragments) {
       lines.add(
-        '• ${timeFormat.format(fragment.timestamp)} ${fragment.mood.displayName}：${truncateWithEllipsis(fragment.displayContent, maxLength: 90)}',
+        '• ${timeFormat.format(fragment.timestamp)} ${fragment.mood.displayName}：${truncateWithEllipsis(fragmentContentWithTags(fragment), maxLength: 90)}',
       );
     }
   }
@@ -552,6 +552,13 @@ String composeDailyEmotionSummary({
 String truncateWithEllipsis(String text, {int maxLength = 180}) {
   if (text.length <= maxLength) return text;
   return '${text.substring(0, maxLength).trim()}…';
+}
+
+String fragmentContentWithTags(MoodFragment fragment) {
+  if (fragment.fullContent.isNotEmpty) {
+    return fragment.fullContent;
+  }
+  return fragment.displayContent;
 }
 
 class BedtimeSummaryDetailScreen extends StatefulWidget {
@@ -850,11 +857,7 @@ class _BedtimeSummaryDetailScreenState
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      truncateWithEllipsis(
-                        fragment.displayContent.isNotEmpty
-                            ? fragment.displayContent
-                            : fragment.fullContent,
-                      ),
+                      truncateWithEllipsis(fragmentContentWithTags(fragment)),
                       style: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 13,
