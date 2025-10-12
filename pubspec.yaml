@@ -47,6 +47,7 @@ dependencies:
   path: ^1.9.0                # 路径操作
   
   # Network and API
+  crypto: ^3.0.3              # 哈希与签名工具
   dio: ^5.4.1                 # HTTP客户端
   http: ^1.2.0                # HTTP请求（用于印象画生成）
   url_launcher: ^6.2.4        # 外部链接启动

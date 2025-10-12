@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
 import '../models/art_style.dart';
 import 'settings_service.dart';
 
@@ -28,6 +29,11 @@ class ImpressionImageService {
 
   static const String _selectedStyleKey = 'selected_art_style';
   static const String _generationModeKey = 'image_generation_mode';
+  static const String _imageCacheKey = 'impression_image_cache';
+  static const int _imageCacheLimit = 30;
+
+  Map<String, Map<String, dynamic>> _imageCache = {};
+  bool _imageCacheLoaded = false;
 
   /// 获取用户选择的艺术风格
   Future<ArtStyle> getSelectedStyle() async {
@@ -146,15 +152,40 @@ class ImpressionImageService {
       style.generatePrompt(emotionSummary, timeRange),
     );
 
+    // 先尝试读取缓存
+    final cachedImage = await _getCachedImage(prompt);
+    if (cachedImage != null) {
+      if (kDebugMode) {
+        debugPrint('[ImpressionImage] Use cached image for style=${style.id}');
+      }
+      return ImpressionImageResult(
+        imageUrl: cachedImage.sourceUrl ?? '',
+        style: style,
+        generationMode: GenerationMode.ai,
+        isLocal: true,
+        prompt: prompt,
+        imageBytes: cachedImage.bytes,
+      );
+    }
+
     // 调用SiliconFlow文生图API
     final imageUrl = await _callSiliconFlowImageAPI(prompt);
+    final imageBytes = await _downloadImageBytes(imageUrl);
+    if (imageBytes != null) {
+      await _storeCachedImage(
+        prompt: prompt,
+        imageUrl: imageUrl,
+        bytes: imageBytes,
+      );
+    }
 
     return ImpressionImageResult(
       imageUrl: imageUrl,
       style: style,
       generationMode: GenerationMode.ai,
-      isLocal: false,
+      isLocal: imageBytes != null,
       prompt: prompt,
+      imageBytes: imageBytes,
     );
   }
 
@@ -240,6 +271,117 @@ class ImpressionImageService {
       return normalized;
     }
     return '${normalized.substring(0, maxLength).trimRight()}…';
+  }
+
+  Future<_CachedImage?> _getCachedImage(String prompt) async {
+    await _ensureCacheLoaded();
+    final key = _hashPrompt(prompt);
+    final entry = _imageCache[key];
+    if (entry == null) return null;
+
+    final base64Data = entry['base64'] as String?;
+    if (base64Data == null || base64Data.isEmpty) {
+      return null;
+    }
+
+    try {
+      final bytes = base64Decode(base64Data);
+      final sourceUrl = entry['url'] as String?;
+      return _CachedImage(bytes: bytes, sourceUrl: sourceUrl);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ImpressionImage] Failed to decode cached image: $e');
+      }
+      return null;
+    }
+  }
+
+  Future<void> _storeCachedImage({
+    required String prompt,
+    required String imageUrl,
+    required Uint8List bytes,
+  }) async {
+    await _ensureCacheLoaded();
+    final key = _hashPrompt(prompt);
+
+    _imageCache[key] = {
+      'url': imageUrl,
+      'base64': base64Encode(bytes),
+      'savedAt': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    _pruneCacheIfNeeded();
+    await _persistCache();
+  }
+
+  Future<void> _ensureCacheLoaded() async {
+    if (_imageCacheLoaded) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final cacheString = prefs.getString(_imageCacheKey);
+    if (cacheString != null && cacheString.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(cacheString) as Map<String, dynamic>;
+        _imageCache = decoded.map(
+          (key, value) =>
+              MapEntry(key, Map<String, dynamic>.from(value as Map)),
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[ImpressionImage] Failed to load cache: $e');
+        }
+        _imageCache = {};
+      }
+    }
+
+    _imageCacheLoaded = true;
+  }
+
+  Future<void> _persistCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_imageCacheKey, jsonEncode(_imageCache));
+  }
+
+  void _pruneCacheIfNeeded() {
+    if (_imageCache.length <= _imageCacheLimit) return;
+
+    final entries = _imageCache.entries.toList()
+      ..sort((a, b) {
+        final aTime = (a.value['savedAt'] ?? 0) as int;
+        final bTime = (b.value['savedAt'] ?? 0) as int;
+        return aTime.compareTo(bTime);
+      });
+
+    final removeCount = _imageCache.length - _imageCacheLimit;
+    for (var i = 0; i < removeCount; i++) {
+      _imageCache.remove(entries[i].key);
+    }
+  }
+
+  String _hashPrompt(String prompt) {
+    final bytes = utf8.encode(prompt);
+    return sha1.convert(bytes).toString();
+  }
+
+  Future<Uint8List?> _downloadImageBytes(String imageUrl) async {
+    try {
+      final response = await http
+          .get(Uri.parse(imageUrl))
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+      if (kDebugMode) {
+        debugPrint(
+          '[ImpressionImage] Failed to download image: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ImpressionImage] Download exception: $e');
+      }
+    }
+    return null;
   }
 
   Future<_ImageApiResult> _postImageRequest({
@@ -360,6 +502,9 @@ class ImpressionImageResult {
   /// 情绪数据（用于本地渲染）
   final String? emotionData;
 
+  /// 图片二进制数据（缓存使用）
+  final Uint8List? imageBytes;
+
   const ImpressionImageResult({
     required this.imageUrl,
     required this.style,
@@ -367,7 +512,15 @@ class ImpressionImageResult {
     required this.isLocal,
     this.prompt,
     this.emotionData,
+    this.imageBytes,
   });
+}
+
+class _CachedImage {
+  final Uint8List bytes;
+  final String? sourceUrl;
+
+  const _CachedImage({required this.bytes, this.sourceUrl});
 }
 
 class _ImageApiResult {

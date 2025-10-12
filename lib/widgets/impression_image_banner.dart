@@ -125,7 +125,9 @@ class _ImpressionImageBannerState extends State<ImpressionImageBanner> {
             children: [
               Icon(
                 Icons.image_not_supported_outlined,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
                 size: 48,
               ),
               const SizedBox(height: 12),
@@ -161,11 +163,7 @@ class _ImpressionImageBannerState extends State<ImpressionImageBanner> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.palette_outlined,
-                  color: Colors.white,
-                  size: 14,
-                ),
+                Icon(Icons.palette_outlined, color: Colors.white, size: 14),
                 const SizedBox(width: 6),
                 Text(
                   _imageResult!.style.name,
@@ -188,37 +186,36 @@ class _ImpressionImageBannerState extends State<ImpressionImageBanner> {
 
     switch (result.generationMode) {
       case GenerationMode.ai:
-        // AI生成：显示网络图片
-        return Image.network(
-          result.imageUrl,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
+        // AI生成：优先使用缓存的内存图片
+        if (result.imageBytes != null) {
+          return Image.memory(result.imageBytes!, fit: BoxFit.cover);
+        }
+
+        if (result.imageUrl.isNotEmpty) {
+          return Image.network(
+            result.imageUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
                 ),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  size: 48,
-                ),
-              ),
-            );
-          },
-        );
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return _buildErrorPlaceholder(theme);
+            },
+          );
+        }
+
+        return _buildErrorPlaceholder(theme);
 
       case GenerationMode.preset:
         // 预设图片：显示网络图片（fallback URL）
@@ -237,7 +234,10 @@ class _ImpressionImageBannerState extends State<ImpressionImageBanner> {
   }
 
   /// 本地渲染降级方案：使用渐变色背景
-  Widget _buildLocalRenderFallback(ThemeData theme, ImpressionImageResult result) {
+  Widget _buildLocalRenderFallback(
+    ThemeData theme,
+    ImpressionImageResult result,
+  ) {
     // 根据艺术风格的颜色主题创建渐变
     final colors = result.style.colorTheme.map((hex) {
       return Color(int.parse(hex.replaceFirst('#', '0xFF')));
@@ -277,6 +277,19 @@ class _ImpressionImageBannerState extends State<ImpressionImageBanner> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorPlaceholder(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          size: 48,
         ),
       ),
     );
