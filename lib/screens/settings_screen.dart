@@ -41,6 +41,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 艺术风格
   ArtStyle _selectedArtStyle = ArtStyles.miyazaki;
 
+  // 图片生成模式
+  GenerationMode _generationMode = GenerationMode.ai;
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +58,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // 加载艺术风格
     final selectedStyle = await _impressionService.getSelectedStyle();
 
+    // 加载图片生成模式
+    final generationMode = await _impressionService.getGenerationMode();
+
     if (mounted) {
       setState(() {
         _reminderEnabled = reminderEnabled;
@@ -66,6 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         }
         _selectedArtStyle = selectedStyle;
+        _generationMode = generationMode;
       });
     }
   }
@@ -151,6 +158,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 24),
                   ],
                   _buildReminderSection(),
+                  const SizedBox(height: 24),
+                  _buildImpressionImageSection(),
                   const SizedBox(height: 24),
                   _buildArtStyleSection(),
                   const SizedBox(height: 24),
@@ -690,6 +699,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// 印象画配置区域
+  Widget _buildImpressionImageSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.image_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '印象画配置',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 生成模式选择
+            Text(
+              '生成方式',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ...GenerationMode.values.map((mode) {
+              final isSelected = mode == _generationMode;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  elevation: isSelected ? 2 : 0,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
+                  child: ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    title: Text(
+                      _getGenerationModeName(mode),
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    subtitle: Text(_getGenerationModeDescription(mode)),
+                    onTap: () => _selectGenerationMode(mode),
+                  ),
+                ),
+              );
+            }),
+
+            if (_generationMode == GenerationMode.ai) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.smart_toy_outlined),
+                title: const Text('文生图模型'),
+                subtitle: const Text('SiliconFlow - Qwen/Qwen-Image-Edit-2509'),
+                trailing: const Icon(Icons.info_outlined),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('文生图API说明'),
+                      content: const Text(
+                        '当前使用SiliconFlow的文生图服务\n\n'
+                        '模型：Qwen/Qwen-Image-Edit-2509\n'
+                        'API Key：复用对话模型配置\n\n'
+                        '如果AI生成失败，会自动降级到预设图片模式',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('关闭'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 艺术风格选择区域
   Widget _buildArtStyleSection() {
     return Card(
@@ -802,6 +906,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _selectedArtStyle = style;
     });
     _showSuccessSnackBar('已选择 ${style.name} 风格');
+  }
+
+  /// 选择图片生成模式
+  Future<void> _selectGenerationMode(GenerationMode mode) async {
+    await _impressionService.setGenerationMode(mode);
+    setState(() {
+      _generationMode = mode;
+    });
+    _showSuccessSnackBar('已切换到${_getGenerationModeName(mode)}');
+  }
+
+  /// 获取生成模式名称
+  String _getGenerationModeName(GenerationMode mode) {
+    switch (mode) {
+      case GenerationMode.ai:
+        return 'AI生成';
+      case GenerationMode.preset:
+        return '预设图片';
+      case GenerationMode.local:
+        return '本地渲染';
+    }
+  }
+
+  /// 获取生成模式描述
+  String _getGenerationModeDescription(GenerationMode mode) {
+    switch (mode) {
+      case GenerationMode.ai:
+        return '使用AI根据情绪数据生成独特的艺术画作（需要API Key）';
+      case GenerationMode.preset:
+        return '使用精选的高质量预设图片，速度最快';
+      case GenerationMode.local:
+        return '本地生成渐变色彩图案，完全离线可用';
+    }
   }
 
   /// 获取提供商帮助文本

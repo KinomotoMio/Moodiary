@@ -137,8 +137,8 @@ class ImpressionImageService {
     // 生成提示词
     final prompt = style.generatePrompt(emotionSummary, timeRange);
 
-    // 调用通义万相API
-    final imageUrl = await _callTongyiWanxiangAPI(prompt);
+    // 调用SiliconFlow文生图API
+    final imageUrl = await _callSiliconFlowImageAPI(prompt);
 
     return ImpressionImageResult(
       imageUrl: imageUrl,
@@ -149,82 +149,44 @@ class ImpressionImageService {
     );
   }
 
-  /// 调用通义万相API
-  Future<String> _callTongyiWanxiangAPI(String prompt) async {
+  /// 调用SiliconFlow文生图API
+  Future<String> _callSiliconFlowImageAPI(String prompt) async {
+    // 从设置服务获取API Key（复用对话模型的Key）
     final prefs = await SharedPreferences.getInstance();
-    final apiKey = prefs.getString('dashscope_api_key');
+    final apiKey = prefs.getString('llm_api_key');
 
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('请先在设置中配置DashScope API Key');
+      throw Exception('请先在设置中配置SiliconFlow API Key');
     }
 
-    // 通义万相API调用
-    final url = Uri.parse('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis');
+    // SiliconFlow文生图API
+    final url = Uri.parse('https://api.siliconflow.cn/v1/images/generations');
 
     final response = await http.post(
       url,
       headers: {
         'Authorization': 'Bearer $apiKey',
         'Content-Type': 'application/json',
-        'X-DashScope-Async': 'enable',
       },
       body: jsonEncode({
-        'model': 'wanx-v1',
-        'input': {
-          'prompt': prompt,
-        },
-        'parameters': {
-          'size': '1024*1024',
-          'n': 1,
-        },
+        'model': 'Qwen/Qwen-Image-Edit-2509',
+        'prompt': prompt,
+        'num_inference_steps': 20,
       }),
-    ).timeout(const Duration(seconds: 30));
+    ).timeout(const Duration(seconds: 60));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final taskId = data['output']['task_id'];
-
-      // 轮询获取结果
-      return await _pollTaskResult(taskId, apiKey);
-    } else {
-      throw Exception('API调用失败: ${response.statusCode}');
-    }
-  }
-
-  /// 轮询任务结果
-  Future<String> _pollTaskResult(String taskId, String apiKey) async {
-    const maxAttempts = 30; // 最多轮询30次
-    const pollInterval = Duration(seconds: 2);
-
-    for (var i = 0; i < maxAttempts; i++) {
-      await Future.delayed(pollInterval);
-
-      final url = Uri.parse('https://dashscope.aliyuncs.com/api/v1/tasks/$taskId');
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final status = data['output']['task_status'];
-
-        if (status == 'SUCCEEDED') {
-          final results = data['output']['results'] as List;
-          return results[0]['url'];
-        } else if (status == 'FAILED') {
-          throw Exception('图片生成失败');
-        }
-        // 否则继续轮询
+      final images = data['images'] as List;
+      if (images.isNotEmpty) {
+        return images[0]['url'];
       } else {
-        throw Exception('获取任务状态失败: ${response.statusCode}');
+        throw Exception('API返回图片列表为空');
       }
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception('API调用失败: ${response.statusCode} - ${error['error']?['message'] ?? 'Unknown error'}');
     }
-
-    throw Exception('图片生成超时');
   }
 
   /// 方案C：本地渲染生成
