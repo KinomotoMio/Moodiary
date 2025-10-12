@@ -135,6 +135,10 @@ class ImpressionImageService {
     String timeRange,
     ArtStyle style,
   ) async {
+    if (kDebugMode) {
+      debugPrint('[ImpressionImage] Start AI generation with style=${style.id}');
+    }
+
     // 生成提示词
     final prompt = _preparePrompt(
       style.generatePrompt(emotionSummary, timeRange),
@@ -165,42 +169,49 @@ class ImpressionImageService {
     // SiliconFlow文生图API
     final url = Uri.parse('https://api.siliconflow.cn/v1/images/generations');
 
-    final response = await http.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'model': 'Qwen/Qwen-Image-Edit-2509',
-        'prompt': prompt,
-        'negative_prompt': 'low quality, distorted, watermark, text, signature',
-        'num_inference_steps': 20,
-        'guidance_scale': 7,
-        'image_size': '1280x720',
-      }),
-    ).timeout(const Duration(seconds: 60));
+    final primaryPayload = {
+      'model': 'Qwen/Qwen-Image-Edit-2509',
+      'prompt': prompt,
+      'negative_prompt': 'low quality, distorted, watermark, text, signature',
+      'num_inference_steps': 20,
+      'guidance_scale': 7,
+      'image_size': '1280x720',
+    };
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final images = data['images'] as List;
-      if (images.isNotEmpty) {
-        return images[0]['url'];
-      } else {
-        throw Exception('API返回图片列表为空');
-      }
-    } else {
-      final errorBody = response.body;
-      if (kDebugMode) {
-        debugPrint('SiliconFlow Image API Error: $errorBody');
-      }
-      try {
-        final error = jsonDecode(errorBody);
-        throw Exception('文生图API调用失败: ${response.statusCode} - ${error['error']?['message'] ?? 'Unknown error'}');
-      } catch (e) {
-        throw Exception('文生图API调用失败: ${response.statusCode}');
-      }
+    final firstAttempt = await _postImageRequest(
+      url: url,
+      apiKey: apiKey,
+      payload: primaryPayload,
+    );
+
+    if (firstAttempt.isSuccess) {
+      return firstAttempt.url!;
     }
+
+    // 如果首次失败且是参数问题，尝试使用精简参数重试一次
+    if (kDebugMode) {
+      debugPrint(
+        '[ImpressionImage] First attempt failed (${firstAttempt.errorMessage ?? 'unknown'}), retrying without optional parameters...',
+      );
+    }
+
+    final fallbackPayload = {
+      'model': 'Qwen/Qwen-Image-Edit-2509',
+      'prompt': prompt,
+    };
+
+    final secondAttempt = await _postImageRequest(
+      url: url,
+      apiKey: apiKey,
+      payload: fallbackPayload,
+    );
+
+    if (secondAttempt.isSuccess) {
+      return secondAttempt.url!;
+    }
+
+    final errorMessage = secondAttempt.errorMessage ?? firstAttempt.errorMessage;
+    throw Exception(errorMessage ?? '文生图API调用失败');
   }
 
   /// 方案C：本地渲染生成
@@ -227,6 +238,98 @@ class ImpressionImageService {
       return normalized;
     }
     return '${normalized.substring(0, maxLength).trimRight()}…';
+  }
+
+  Future<_ImageApiResult> _postImageRequest({
+    required Uri url,
+    required String apiKey,
+    required Map<String, dynamic> payload,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('[ImpressionImage] POST images/generations payload=${payload.keys}');
+      }
+
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 60));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final urlCandidate = _extractImageUrl(data);
+        if (urlCandidate != null) {
+          if (kDebugMode) {
+            debugPrint('[ImpressionImage] Image generated: $urlCandidate');
+          }
+          return _ImageApiResult.success(urlCandidate);
+        }
+        return _ImageApiResult.failure('API返回的图片字段无法解析');
+      }
+
+      final errorBody = response.body;
+      if (kDebugMode) {
+        debugPrint(
+            '[ImpressionImage] SiliconFlow error ${response.statusCode}: $errorBody');
+      }
+
+      String? errorMessage;
+      try {
+        final error = jsonDecode(errorBody);
+        errorMessage =
+            '文生图API调用失败: ${response.statusCode} - ${error['error']?['message'] ?? error['message'] ?? 'Unknown error'}';
+      } catch (_) {
+        errorMessage = '文生图API调用失败: ${response.statusCode}';
+      }
+      return _ImageApiResult.failure(errorMessage);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ImpressionImage] Request failed: $e');
+      }
+      return _ImageApiResult.failure('文生图API调用异常: $e');
+    }
+  }
+
+  String? _extractImageUrl(Map<String, dynamic> data) {
+    // 兼容多种响应格式
+    final candidates = <dynamic>[
+      data['images'],
+      data['data'],
+      data['output'],
+    ].where((element) => element != null);
+
+    for (final candidate in candidates) {
+      if (candidate is List && candidate.isNotEmpty) {
+        final first = candidate.first;
+        if (first is Map<String, dynamic>) {
+          final url = first['url'] ??
+              first['image_url'] ??
+              first['image'] ??
+              first['src'];
+          if (url is String && url.isNotEmpty) {
+            return url;
+          }
+        } else if (first is String && first.startsWith('http')) {
+          return first;
+        }
+      } else if (candidate is Map<String, dynamic>) {
+        // 某些响应可能是 { "url": "...", ... }
+        final url = candidate['url'] ??
+            candidate['image_url'] ??
+            candidate['image'] ??
+            candidate['src'];
+        if (url is String && url.isNotEmpty) {
+          return url;
+        }
+      }
+    }
+    return null;
   }
 }
 
@@ -258,4 +361,24 @@ class ImpressionImageResult {
     this.prompt,
     this.emotionData,
   });
+}
+
+class _ImageApiResult {
+  final bool isSuccess;
+  final String? url;
+  final String? errorMessage;
+
+  const _ImageApiResult._({
+    required this.isSuccess,
+    this.url,
+    this.errorMessage,
+  });
+
+  factory _ImageApiResult.success(String url) {
+    return _ImageApiResult._(isSuccess: true, url: url);
+  }
+
+  factory _ImageApiResult.failure(String? message) {
+    return _ImageApiResult._(isSuccess: false, errorMessage: message);
+  }
 }
