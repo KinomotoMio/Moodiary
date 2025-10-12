@@ -33,7 +33,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       const AnalyticsScreen(),
       const TopicTagsScreen(),
-      const BedtimeReadingScreen(),
+      const BedtimeHistoryScreen(),
     ];
   }
 

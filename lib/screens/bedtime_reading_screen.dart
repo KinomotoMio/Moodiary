@@ -571,7 +571,7 @@ class _BedtimeSummaryDetailScreenState
 
   late DailySummary _summary;
   List<MoodFragment> _fragments = [];
-  bool _isLoading = true;
+  bool _isLoadingFragments = true;
 
   @override
   void initState() {
@@ -594,7 +594,7 @@ class _BedtimeSummaryDetailScreenState
     if (!mounted) return;
     setState(() {
       _fragments = fragments;
-      _isLoading = false;
+      _isLoadingFragments = false;
     });
   }
 
@@ -610,61 +610,50 @@ class _BedtimeSummaryDetailScreenState
         elevation: 0,
         title: Text(dateStr),
       ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: theme.colorScheme.primary,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ImpressionImageBanner(
+              emotionSummary: composeDailyEmotionSummary(
+                summary: _summary,
+                fragments: _fragments,
               ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ImpressionImageBanner(
-                    emotionSummary: composeDailyEmotionSummary(
-                      summary: _summary,
-                      fragments: _fragments,
-                    ),
-                    timeRange: DateFormat(
-                      'MM月dd日',
-                      'zh_CN',
-                    ).format(_summary.date),
-                    height: 180,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildMetaChips(theme),
-                  const SizedBox(height: 24),
-                  _buildDetailSection(
-                    theme: theme,
-                    icon: Icons.event_note_outlined,
-                    iconColor: const Color(0xFF64b5f6),
-                    title: '今日事件',
-                    content: _summary.eventSummary,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDetailSection(
-                    theme: theme,
-                    icon: Icons.favorite_border,
-                    iconColor: const Color(0xFFef5350),
-                    title: '情绪流向',
-                    content: _summary.emotionReview,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDetailSection(
-                    theme: theme,
-                    icon: Icons.self_improvement_outlined,
-                    iconColor: const Color(0xFF9575cd),
-                    title: '正念冥想',
-                    content: _summary.meditationGuide,
-                  ),
-                  if (_fragments.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    _buildFragmentList(theme),
-                  ],
-                ],
-              ),
+              timeRange: DateFormat('MM月dd日', 'zh_CN').format(_summary.date),
+              height: 180,
             ),
+            const SizedBox(height: 24),
+            _buildMetaChips(theme),
+            const SizedBox(height: 24),
+            _buildDetailSection(
+              theme: theme,
+              icon: Icons.event_note_outlined,
+              iconColor: const Color(0xFF64b5f6),
+              title: '今日事件',
+              content: _summary.eventSummary,
+            ),
+            const SizedBox(height: 16),
+            _buildDetailSection(
+              theme: theme,
+              icon: Icons.favorite_border,
+              iconColor: const Color(0xFFef5350),
+              title: '情绪流向',
+              content: _summary.emotionReview,
+            ),
+            const SizedBox(height: 16),
+            _buildDetailSection(
+              theme: theme,
+              icon: Icons.self_improvement_outlined,
+              iconColor: const Color(0xFF9575cd),
+              title: '正念冥想',
+              content: _summary.meditationGuide,
+            ),
+            const SizedBox(height: 24),
+            _buildFragmentSection(theme),
+          ],
+        ),
+      ),
     );
   }
 
@@ -753,7 +742,72 @@ class _BedtimeSummaryDetailScreenState
     );
   }
 
-  Widget _buildFragmentList(ThemeData theme) {
+  Widget _buildFragmentSection(ThemeData theme) {
+    if (_isLoadingFragments) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '正在整理当天的心情片段...',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_fragments.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.notes_outlined,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '当日心情片段',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '当天未记录具体片段，但情绪洞察已为你保存。',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final timeFormat = DateFormat('HH:mm', 'zh_CN');
     return Card(
       child: Padding(
@@ -830,8 +884,10 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
   final DailySummaryService _summaryService = DailySummaryService.instance;
 
   List<DailySummary> _summaries = [];
+  DailySummary? _todaySummary;
   bool _isLoading = true;
   bool _showOnlyFavorites = false;
+  bool _isGeneratingToday = false;
 
   @override
   void initState() {
@@ -839,19 +895,32 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
     _loadHistory();
   }
 
-  Future<void> _loadHistory() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _loadHistory({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final summaries = await _summaryService.getHistorySummaries(
         limit: 60,
         onlyFavorites: _showOnlyFavorites,
       );
+
+      final todayId = DailySummary.getIdFromDate(DateTime.now());
+      DailySummary? todaySummary;
+      for (final summary in summaries) {
+        if (summary.id == todayId) {
+          todaySummary = summary;
+          break;
+        }
+      }
+
       if (mounted) {
         setState(() {
           _summaries = summaries;
+          _todaySummary = todaySummary;
           _isLoading = false;
         });
       }
@@ -860,6 +929,9 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
         setState(() {
           _isLoading = false;
         });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('历史记录加载失败：$e')));
       }
     }
   }
@@ -869,6 +941,41 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
       _showOnlyFavorites = !_showOnlyFavorites;
     });
     _loadHistory();
+  }
+
+  Future<void> _handleTodayAction() async {
+    if (_isGeneratingToday) return;
+
+    if (_todaySummary != null) {
+      _viewSummary(_todaySummary!);
+      return;
+    }
+
+    setState(() {
+      _isGeneratingToday = true;
+    });
+
+    try {
+      final summary = await _summaryService.generateTodaySummary(
+        forceRegenerate: true,
+      );
+      if (!mounted) return;
+
+      await _loadHistory(showLoading: false);
+      _viewSummary(summary);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('生成失败：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingToday = false;
+        });
+      }
+    }
   }
 
   void _viewSummary(DailySummary summary) {
@@ -888,7 +995,7 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('历史记录'),
+        title: const Text('睡前阅读'),
         actions: [
           IconButton(
             icon: Icon(
@@ -899,27 +1006,111 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: theme.colorScheme.primary,
-              ),
-            )
-          : _summaries.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _summaries.length,
-              itemBuilder: (context, index) {
-                final summary = _summaries[index];
-                return _buildHistoryItem(summary);
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: () => _loadHistory(showLoading: false),
+        child: _isLoading
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 160),
+                children: [
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              )
+            : _buildHistoryList(theme),
+      ),
     );
   }
 
-  Widget _buildHistoryItem(DailySummary summary) {
-    final theme = Theme.of(context);
+  Widget _buildHistoryList(ThemeData theme) {
+    final items = _summaries;
+    final extraPlaceholder = items.isEmpty ? 1 : 0;
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length + 1 + extraPlaceholder,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _buildTodayHeader(theme);
+        }
+
+        if (items.isEmpty && index == 1) {
+          return _buildEmptyState(theme);
+        }
+
+        final summary = items[index - 1];
+        return _buildHistoryItem(theme, summary);
+      },
+    );
+  }
+
+  Widget _buildTodayHeader(ThemeData theme) {
+    final hasToday = _todaySummary != null;
+    final title = hasToday ? '今晚的睡前阅读准备好了' : '今晚还没有生成睡前阅读';
+    final description = hasToday
+        ? '点击下方按钮即可查看今天的回顾与冥想引导。'
+        : '记录完一天的心情后，点击下方按钮即可生成属于你的睡前陪伴。';
+
+    final buttonLabel = _isGeneratingToday
+        ? '生成中...'
+        : hasToday
+        ? '查看今日内容'
+        : '生成今日睡前阅读';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  hasToday ? Icons.bedtime : Icons.auto_awesome,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 14,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _isGeneratingToday ? null : _handleTodayAction,
+              icon: Icon(
+                hasToday ? Icons.visibility_outlined : Icons.auto_awesome,
+              ),
+              label: Text(buttonLabel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(ThemeData theme, DailySummary summary) {
     final dateStr = DateFormat('MM月dd日', 'zh_CN').format(summary.date);
     final isToday = summary.isToday;
 
@@ -967,8 +1158,8 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Text(
-            summary.eventSummary.length > 50
-                ? '${summary.eventSummary.substring(0, 50)}...'
+            summary.eventSummary.length > 60
+                ? '${summary.eventSummary.substring(0, 60)}...'
                 : summary.eventSummary,
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
@@ -978,36 +1169,40 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-        ),
+        trailing: const Icon(Icons.chevron_right),
         onTap: () => _viewSummary(summary),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _showOnlyFavorites ? Icons.favorite_border : Icons.history,
-            size: 64,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _showOnlyFavorites ? '暂无收藏' : '暂无历史记录',
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 18,
+  Widget _buildEmptyState(ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _showOnlyFavorites ? '暂无收藏' : '还没有历史记录',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              _showOnlyFavorites
+                  ? '收藏的睡前阅读会显示在这里。'
+                  : '生成的睡前阅读会自动加入历史，快来记录今天的心情吧。',
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 14,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
