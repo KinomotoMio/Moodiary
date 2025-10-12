@@ -58,21 +58,22 @@ class ArtStyles {
     artistBio: '后印象派代表，用旋转的笔触和强烈的色彩表达内心的激情',
     description: '用旋转的笔触和璀璨的星光，描绘你心中的情绪银河',
     promptTemplate: '''
-Create an impressionist painting in Vincent van Gogh's style, featuring swirling brushstrokes and vibrant colors.
-The artwork should express the emotional journey described below:
+You are Vincent van Gogh, a post-impressionist master known for swirling brushstrokes, vibrant colors, and emotional depth in paintings like "The Starry Night".
 
+Task: Create a horizontal banner artwork in your signature style to accompany a psychological mood report for the user.
+
+User's Emotional Records ({time_range}):
 {emotion_data}
 
-Time period: {time_range}
+Artistic Requirements:
+- Style: Post-impressionist with bold, expressive brushstrokes showing visible texture
+- Colors: Rich and vibrant (deep blues, bright yellows, warm oranges, turquoise)
+- Composition: Horizontal banner format, balanced and suitable for report header
+- Movement: Swirling, dynamic patterns suggesting emotional energy and flow
+- Atmosphere: Capture the essence of the user's emotional journey with starry night aesthetic
+- Emotion: Express the depth and complexity of feelings, not literal representation
 
-Style characteristics:
-- Bold, expressive brushstrokes with visible texture
-- Rich, vibrant colors (blues, yellows, oranges)
-- Swirling, dynamic patterns suggesting movement
-- Starry night aesthetic with emotional depth
-- Post-impressionist technique
-
-The painting should capture the essence of the emotions rather than literal representation.
+Create a landscape painting that emotionally resonates with these mood records, using your characteristic swirling skies and bold color contrasts.
 ''',
     fallbackImageUrls: [
       'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=400&fit=crop',
@@ -93,22 +94,21 @@ The painting should capture the essence of the emotions rather than literal repr
     artistBio: '印象派创始人，捕捉光影变化中的瞬间美感',
     description: '在光影流转间，捕捉你情绪中最柔和的涟漪',
     promptTemplate: '''
-Create an impressionist painting in Claude Monet's style, with soft, dreamy brushwork and gentle color transitions.
-The artwork should reflect the emotional atmosphere described below:
+You are Claude Monet, pioneer of Impressionism, celebrated for capturing fleeting light with soft, atmospheric brushwork.
 
+Task: Paint a horizontal banner artwork, gentle and luminous, to sit atop a psychological mood report.
+
+User's Emotional Records ({time_range}):
 {emotion_data}
 
-Time period: {time_range}
+Artistic Requirements:
+- Style: Impressionist water garden ambience with diffused edges and layered light
+- Colors: Misty greens, lilac blues, pale pinks, golden highlights drifting across water
+- Composition: Wide, panoramic layout with tranquil reflections and subtle depth
+- Atmosphere: Contemplative calm that lets the viewer breathe with the user's emotions
+- Emotion: Translate the mood records into ripples of light, not literal portraits
 
-Style characteristics:
-- Soft, feathery brushstrokes creating atmospheric effects
-- Gentle pastel colors with subtle gradations
-- Water lilies, reflections, and natural elements
-- Peaceful, contemplative mood
-- Light and shadow interplay
-- Impressionist technique focusing on fleeting moments
-
-The painting should evoke a sense of tranquility and emotional reflection.
+Create a serene water-garden landscape that lets these emotional notes glow softly across the banner.
 ''',
     fallbackImageUrls: [
       'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&h=400&fit=crop',
@@ -128,22 +128,21 @@ The painting should evoke a sense of tranquility and emotional reflection.
     artistBio: '立体主义先驱，用几何形状解构重组现实',
     description: '用几何的语言，拼凑你内心世界的多个侧面',
     promptTemplate: '''
-Create a cubist painting in Pablo Picasso's style, with geometric shapes and multiple perspectives.
-The artwork should represent the emotional complexity described below:
+You are Pablo Picasso, master of Cubism, renowned for reframing reality through fractured geometry and layered perspectives.
 
+Task: Craft a horizontal banner artwork for a psychological mood report, revealing nuanced inner worlds.
+
+User's Emotional Records ({time_range}):
 {emotion_data}
 
-Time period: {time_range}
+Artistic Requirements:
+- Style: Analytical Cubism with intersecting planes and angular silhouettes
+- Colors: Muted earth tones contrasted with electric accents to highlight tension
+- Composition: Wide panoramic structure with overlapping viewpoints stitched together
+- Atmosphere: Thoughtful, introspective energy that shows simultaneous emotions
+- Emotion: Use geometric abstraction to decode the user's experiences without literal storytelling
 
-Style characteristics:
-- Geometric shapes and angular forms
-- Multiple viewpoints shown simultaneously
-- Abstract representation of emotions
-- Bold, contrasting colors
-- Fragmented and reconstructed reality
-- Cubist technique
-
-The painting should express emotional complexity through geometric abstraction.
+Assemble an abstract emotional tapestry that invites the viewer to explore every layered fragment.
 ''',
     fallbackImageUrls: [
       'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=800&h=400&fit=crop',
@@ -163,22 +162,21 @@ The painting should express emotional complexity through geometric abstraction.
     artistBio: '动画大师，用纯真的画笔描绘充满温情的幻想世界',
     description: '在充满温情的动画世界中，找到情绪的归属',
     promptTemplate: '''
-Create an artwork in Hayao Miyazaki's Studio Ghibli animation style, with dreamy landscapes and warm atmosphere.
-The artwork should capture the emotional journey described below:
+You are Hayao Miyazaki, storyteller of tender, hand-painted worlds where nature, light, and emotion breathe together.
 
+Task: Illustrate a horizontal banner to accompany a psychological mood report, offering gentle companionship.
+
+User's Emotional Records ({time_range}):
 {emotion_data}
 
-Time period: {time_range}
+Artistic Requirements:
+- Style: Studio Ghibli-inspired watercolor softness with lovingly detailed landscapes
+- Colors: Warm sunlight tones, verdant greens, sky blues, and cozy evening hues
+- Composition: Wide cinematic panorama with layered depth and drifting clouds
+- Atmosphere: Compassionate, hopeful, and quietly magical to soothe the viewer
+- Emotion: Let the user's stories bloom through nature metaphors and subtle character impressions
 
-Style characteristics:
-- Soft watercolor-like colors
-- Dreamy, fantastical landscapes
-- Warm, comforting atmosphere
-- Nature elements (clouds, grass, trees)
-- Gentle lighting and peaceful scenes
-- Studio Ghibli aesthetic
-
-The artwork should evoke feelings of warmth, healing, and wonder.
+Paint a healing vista that feels like a safe haven guided by these emotional memories.
 ''',
     fallbackImageUrls: [
       'https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=800&h=400&fit=crop',
@@ -199,22 +197,21 @@ The artwork should evoke feelings of warmth, healing, and wonder.
     artistBio: '抽象艺术先驱，将音乐的韵律转化为视觉语言',
     description: '让情绪像音符般流淌，在色彩与形状中自由舞蹈',
     promptTemplate: '''
-Create an abstract painting in Wassily Kandinsky's style, with musical rhythm expressed through colors and shapes.
-The artwork should translate the emotional rhythm described below:
+You are Wassily Kandinsky, pioneer of abstract art, orchestrating color and form like symphonic music.
 
+Task: Compose a horizontal banner artwork for a psychological mood report, turning emotions into visual rhythm.
+
+User's Emotional Records ({time_range}):
 {emotion_data}
 
-Time period: {time_range}
+Artistic Requirements:
+- Style: Abstract composition with lyrical geometry, pulsating circles, and decisive lines
+- Colors: Bold primaries with luminous accents that echo harmonious chords
+- Composition: Panoramic sweep of interlocking shapes, guiding the eye like a score
+- Atmosphere: Dynamic yet balanced, capturing crescendos and rests in the user's feelings
+- Emotion: Transform the mood records into synesthetic movement instead of literal scenes
 
-Style characteristics:
-- Abstract geometric and organic shapes
-- Vibrant, contrasting colors
-- Musical rhythm and movement
-- Circles, lines, and triangles
-- Synesthesia between sound and color
-- Non-representational emotional expression
-
-The painting should feel like visual music, expressing emotions through pure abstraction.
+Conduct a visual symphony that lets these emotions dance across the horizontal canvas.
 ''',
     fallbackImageUrls: [
       'https://images.unsplash.com/photo-1549887534-1541e9326642?w=800&h=400&fit=crop',
@@ -234,22 +231,21 @@ The painting should feel like visual music, expressing emotions through pure abs
     artistBio: '当代艺术大师，用明快的色彩捕捉生活中的美好瞬间',
     description: '用明媚的色彩，定格你记忆中最温暖的时刻',
     promptTemplate: '''
-Create an artwork in David Hockney's style, with bold colors and simplified forms capturing everyday beauty.
-The artwork should celebrate the moments described below:
+You are David Hockney, contemporary colorist capturing sunlit daily life with confident lines and joyful palettes.
 
+Task: Design a horizontal banner artwork to headline a psychological mood report, celebrating lived moments.
+
+User's Emotional Records ({time_range}):
 {emotion_data}
 
-Time period: {time_range}
+Artistic Requirements:
+- Style: Crisp, simplified shapes with playful perspective and graphic clarity
+- Colors: Vibrant pools of turquoise, citrus yellow, lush green, and pops of fuchsia
+- Composition: Wide cinematic framing with clean geometry and layered planes
+- Atmosphere: Optimistic warmth that honors everyday rituals and heartfelt reflections
+- Emotion: Channel the user's memories into radiant color fields instead of literal portraits
 
-Style characteristics:
-- Bold, flat areas of bright color
-- Simplified forms and clear outlines
-- California sunshine aesthetic
-- Pool water blues and vibrant greens
-- Contemporary pop art influence
-- Optimistic, celebratory mood
-
-The artwork should radiate warmth and capture the beauty of everyday moments.
+Create a sunlit scene that frames these emotional notes as cherished snapshots of life.
 ''',
     fallbackImageUrls: [
       'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800&h=400&fit=crop',
