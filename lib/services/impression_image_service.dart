@@ -136,7 +136,9 @@ class ImpressionImageService {
     ArtStyle style,
   ) async {
     // 生成提示词
-    final prompt = style.generatePrompt(emotionSummary, timeRange);
+    final prompt = _preparePrompt(
+      style.generatePrompt(emotionSummary, timeRange),
+    );
 
     // 调用SiliconFlow文生图API
     final imageUrl = await _callSiliconFlowImageAPI(prompt);
@@ -172,7 +174,10 @@ class ImpressionImageService {
       body: jsonEncode({
         'model': 'Qwen/Qwen-Image-Edit-2509',
         'prompt': prompt,
+        'negative_prompt': 'low quality, distorted, watermark, text, signature',
         'num_inference_steps': 20,
+        'guidance_scale': 7,
+        'image_size': '1280x720',
       }),
     ).timeout(const Duration(seconds: 60));
 
@@ -213,6 +218,15 @@ class ImpressionImageService {
       isLocal: true,
       emotionData: emotionSummary,
     );
+  }
+
+  String _preparePrompt(String prompt) {
+    final normalized = prompt.replaceAll('\r', '').trim();
+    const maxLength = 1800;
+    if (normalized.length <= maxLength) {
+      return normalized;
+    }
+    return '${normalized.substring(0, maxLength).trimRight()}…';
   }
 }
 
