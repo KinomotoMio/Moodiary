@@ -10,7 +10,6 @@ import '../events/app_events.dart';
 import 'add_mood_screen.dart';
 import 'mood_detail_screen.dart';
 import 'settings_screen.dart';
-import 'bedtime_reading_screen.dart';
 import 'insight_report_screen.dart';
 import 'conversation_history_screen.dart';
 
@@ -22,11 +21,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
   List<MoodFragment> _recentFragments = [];
   MoodStatistics? _statistics;
   bool _isLoading = true;
-  
+
   // 事件监听
   late StreamSubscription _moodDataSubscription;
 
@@ -36,17 +36,19 @@ class _HomeScreenState extends State<HomeScreen> {
     _setupEventListeners();
     _loadData();
   }
-  
+
   // 设置事件监听器
   void _setupEventListeners() {
-    _moodDataSubscription = StorageService.eventBus.on<MoodDataChangedEvent>().listen((event) {
-      // 当心情数据发生变化时，重新加载数据
-      if (mounted) {
-        _loadData();
-      }
-    });
+    _moodDataSubscription = StorageService.eventBus
+        .on<MoodDataChangedEvent>()
+        .listen((event) {
+          // 当心情数据发生变化时，重新加载数据
+          if (mounted) {
+            _loadData();
+          }
+        });
   }
-  
+
   @override
   void dispose() {
     _moodDataSubscription.cancel();
@@ -62,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 获取最近的5条Fragment记录
       final allFragments = await _fragmentStorage.getAllFragments();
       _recentFragments = allFragments.take(5).toList();
-      
+
       // 获取统计数据
       _statistics = await _fragmentStorage.getMoodStatistics();
     } catch (e) {
@@ -79,42 +81,48 @@ class _HomeScreenState extends State<HomeScreen> {
     final testEntries = [
       MoodEntry(
         id: '1',
-        content: '今天天气很好，心情特别棒！早上去 #公园 跑步，看到很多可爱的小动物，感觉整个世界都充满了活力。#工作 上也有新的进展，同事们都很支持我的想法。#心情 #运动',
+        content:
+            '今天天气很好，心情特别棒！早上去 #公园 跑步，看到很多可爱的小动物，感觉整个世界都充满了活力。#工作 上也有新的进展，同事们都很支持我的想法。#心情 #运动',
         timestamp: DateTime.now().subtract(const Duration(hours: 2)),
         mood: MoodType.positive,
         emotionScore: 85,
       ),
       MoodEntry(
-        id: '2', 
-        content: '有点 #焦虑，明天有个重要的 #会议，担心准备得不够充分。虽然努力了很久，但总觉得还有什么遗漏的地方。希望明天能顺利进行。#工作 #压力',
+        id: '2',
+        content:
+            '有点 #焦虑，明天有个重要的 #会议，担心准备得不够充分。虽然努力了很久，但总觉得还有什么遗漏的地方。希望明天能顺利进行。#工作 #压力',
         timestamp: DateTime.now().subtract(const Duration(hours: 8)),
         mood: MoodType.negative,
         emotionScore: 35,
       ),
       MoodEntry(
         id: '3',
-        content: '平平常常的一天，没什么特别的事情发生。按部就班地 #工作，吃饭，休息。有时候觉得这样的 #日常 也挺好的，不用太兴奋，也不用太担心。#平静',
+        content:
+            '平平常常的一天，没什么特别的事情发生。按部就班地 #工作，吃饭，休息。有时候觉得这样的 #日常 也挺好的，不用太兴奋，也不用太担心。#平静',
         timestamp: DateTime.now().subtract(const Duration(days: 1)),
         mood: MoodType.neutral,
         emotionScore: 50,
       ),
       MoodEntry(
         id: '4',
-        content: '和 #朋友 们一起聚餐，聊了很多有趣的话题。大家分享了最近的 #生活，虽然各自都有烦恼，但在一起的时候就忘记了所有不开心的事情。#友谊 真是珍贵！#聚会',
+        content:
+            '和 #朋友 们一起聚餐，聊了很多有趣的话题。大家分享了最近的 #生活，虽然各自都有烦恼，但在一起的时候就忘记了所有不开心的事情。#友谊 真是珍贵！#聚会',
         timestamp: DateTime.now().subtract(const Duration(days: 2)),
         mood: MoodType.positive,
         emotionScore: 78,
       ),
       MoodEntry(
         id: '5',
-        content: '感觉有点累了，最近 #工作 #压力 比较大，加班频繁。需要找个时间好好休息一下，也许应该出去 #旅行 放松放松心情。#疲惫',
+        content:
+            '感觉有点累了，最近 #工作 #压力 比较大，加班频繁。需要找个时间好好休息一下，也许应该出去 #旅行 放松放松心情。#疲惫',
         timestamp: DateTime.now().subtract(const Duration(days: 3)),
         mood: MoodType.negative,
         emotionScore: 42,
       ),
       MoodEntry(
         id: '6',
-        content: '周末终于可以好好休息了！睡了个懒觉，然后做了喜欢的 #料理。简单的 #幸福 就是这样，不需要太复杂。#周末 #放松 #美食',
+        content:
+            '周末终于可以好好休息了！睡了个懒觉，然后做了喜欢的 #料理。简单的 #幸福 就是这样，不需要太复杂。#周末 #放松 #美食',
         timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
         mood: MoodType.positive,
         emotionScore: 72,
@@ -169,19 +177,18 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       await _loadData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已添加12条测试心情记录，包含丰富的话题标签')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已添加12条测试心情记录，包含丰富的话题标签')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('添加测试数据失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('添加测试数据失败: $e')));
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             tooltip: '设置',
           ),
-          // 临时：添加测试数据按钮  
+          // 临时：添加测试数据按钮
           IconButton(
             icon: const Icon(Icons.data_array),
             onPressed: _addTestData,
@@ -233,8 +240,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     _buildStatisticsCard(),
                     const SizedBox(height: 24),
-                    _buildBedtimeCard(),
-                    const SizedBox(height: 16),
                     _buildInsightReportCard(),
                     const SizedBox(height: 16),
                     _buildConversationalRecordCard(),
@@ -286,9 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         greeting,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         date,
@@ -327,10 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 12),
-              Text(
-                '还没有心情记录',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('还没有心情记录', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Text(
                 '开始记录你的第一条心情吧！',
@@ -404,17 +405,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: Theme.of(context).colorScheme.primary,
-          size: 24,
-        ),
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(
           label,
@@ -426,75 +423,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBedtimeCard() {
-    final now = DateTime.now();
-    final hour = now.hour;
-    final isBedtime = hour >= 21 || hour < 6; // 晚上9点到早上6点
-
-    return Card(
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const BedtimeReadingScreen()),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.bedtime,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isBedtime ? '睡前阅读 · 今日回顾' : '今日回顾',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isBedtime
-                        ? '回顾今天的经历，放松心情，准备入眠'
-                        : '查看AI生成的今日情绪总结',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildInsightReportCard() {
     return Card(
       child: InkWell(
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const InsightReportScreen()),
+            MaterialPageRoute(
+              builder: (context) => const InsightReportScreen(),
+            ),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -618,9 +554,9 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               '最近记录',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -655,22 +591,25 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           )
         else
-          ...(_recentFragments.map((fragment) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: FragmentCard(
-                  fragment: fragment,
-                  onTap: () async {
-                    final result = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                        builder: (context) => MoodDetailScreen(entry: fragment.toMoodEntry()),
-                      ),
-                    );
-                    if (result == true) {
-                      _loadData(); // 如果删除了记录，重新加载数据
-                    }
-                  },
-                ),
-              ))),
+          ...(_recentFragments.map(
+            (fragment) => Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: FragmentCard(
+                fragment: fragment,
+                onTap: () async {
+                  final result = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MoodDetailScreen(entry: fragment.toMoodEntry()),
+                    ),
+                  );
+                  if (result == true) {
+                    _loadData(); // 如果删除了记录，重新加载数据
+                  }
+                },
+              ),
+            ),
+          )),
       ],
     );
   }
