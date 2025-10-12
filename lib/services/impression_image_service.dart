@@ -8,9 +8,9 @@ import 'settings_service.dart';
 
 /// 图片生成模式
 enum GenerationMode {
-  preset,  // 方案A：预设图片
-  ai,      // 方案B：AI生成
-  local,   // 方案C：本地渲染
+  preset, // 方案A：预设图片
+  ai, // 方案B：AI生成
+  local, // 方案C：本地渲染
 }
 
 /// 印象画生成服务
@@ -136,7 +136,9 @@ class ImpressionImageService {
     ArtStyle style,
   ) async {
     if (kDebugMode) {
-      debugPrint('[ImpressionImage] Start AI generation with style=${style.id}');
+      debugPrint(
+        '[ImpressionImage] Start AI generation with style=${style.id}',
+      );
     }
 
     // 生成提示词
@@ -173,10 +175,11 @@ class ImpressionImageService {
     final primaryPayload = {
       'model': modelId,
       'prompt': prompt,
-      'negative_prompt': 'low quality, distorted, watermark, text, signature',
+      'negative_prompt':
+          'low quality, distorted, watermark, text, letters, words, typography, captions, subtitles, logos, signatures',
       'num_inference_steps': 20,
       'guidance_scale': 7,
-      'image_size': '1280x720',
+      'image_size': '1024x512',
     };
 
     final firstAttempt = await _postImageRequest(
@@ -196,10 +199,7 @@ class ImpressionImageService {
       );
     }
 
-    final fallbackPayload = {
-      'model': modelId,
-      'prompt': prompt,
-    };
+    final fallbackPayload = {'model': modelId, 'prompt': prompt};
 
     final secondAttempt = await _postImageRequest(
       url: url,
@@ -211,7 +211,8 @@ class ImpressionImageService {
       return secondAttempt.url!;
     }
 
-    final errorMessage = secondAttempt.errorMessage ?? firstAttempt.errorMessage;
+    final errorMessage =
+        secondAttempt.errorMessage ?? firstAttempt.errorMessage;
     throw Exception(errorMessage ?? '文生图API调用失败');
   }
 
@@ -248,7 +249,9 @@ class ImpressionImageService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('[ImpressionImage] POST images/generations payload=${payload.keys}');
+        debugPrint(
+          '[ImpressionImage] POST images/generations payload=${payload.keys}',
+        );
       }
 
       final response = await http
@@ -277,7 +280,8 @@ class ImpressionImageService {
       final errorBody = response.body;
       if (kDebugMode) {
         debugPrint(
-            '[ImpressionImage] SiliconFlow error ${response.statusCode}: $errorBody');
+          '[ImpressionImage] SiliconFlow error ${response.statusCode}: $errorBody',
+        );
       }
 
       String? errorMessage;
@@ -309,7 +313,8 @@ class ImpressionImageService {
       if (candidate is List && candidate.isNotEmpty) {
         final first = candidate.first;
         if (first is Map<String, dynamic>) {
-          final url = first['url'] ??
+          final url =
+              first['url'] ??
               first['image_url'] ??
               first['image'] ??
               first['src'];
@@ -321,7 +326,8 @@ class ImpressionImageService {
         }
       } else if (candidate is Map<String, dynamic>) {
         // 某些响应可能是 { "url": "...", ... }
-        final url = candidate['url'] ??
+        final url =
+            candidate['url'] ??
             candidate['image_url'] ??
             candidate['image'] ??
             candidate['src'];

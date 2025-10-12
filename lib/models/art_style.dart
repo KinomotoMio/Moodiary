@@ -72,6 +72,7 @@ Artistic Requirements:
 - Movement: Swirling, dynamic patterns suggesting emotional energy and flow
 - Atmosphere: Capture the essence of the user's emotional journey with starry night aesthetic
 - Emotion: Express the depth and complexity of feelings, not literal representation
+- Avoid: Any text, lettering, signage, or written language
 
 Create a landscape painting that emotionally resonates with these mood records, using your characteristic swirling skies and bold color contrasts.
 ''',
@@ -107,6 +108,7 @@ Artistic Requirements:
 - Composition: Wide, panoramic layout with tranquil reflections and subtle depth
 - Atmosphere: Contemplative calm that lets the viewer breathe with the user's emotions
 - Emotion: Translate the mood records into ripples of light, not literal portraits
+- Avoid: Any text, lettering, signage, or written language
 
 Create a serene water-garden landscape that lets these emotional notes glow softly across the banner.
 ''',
@@ -141,6 +143,7 @@ Artistic Requirements:
 - Composition: Wide panoramic structure with overlapping viewpoints stitched together
 - Atmosphere: Thoughtful, introspective energy that shows simultaneous emotions
 - Emotion: Use geometric abstraction to decode the user's experiences without literal storytelling
+- Avoid: Any text, lettering, signage, or written language
 
 Assemble an abstract emotional tapestry that invites the viewer to explore every layered fragment.
 ''',
@@ -175,6 +178,7 @@ Artistic Requirements:
 - Composition: Wide cinematic panorama with layered depth and drifting clouds
 - Atmosphere: Compassionate, hopeful, and quietly magical to soothe the viewer
 - Emotion: Let the user's stories bloom through nature metaphors and subtle character impressions
+- Avoid: Any text, lettering, signage, or written language
 
 Paint a healing vista that feels like a safe haven guided by these emotional memories.
 ''',
@@ -210,6 +214,7 @@ Artistic Requirements:
 - Composition: Panoramic sweep of interlocking shapes, guiding the eye like a score
 - Atmosphere: Dynamic yet balanced, capturing crescendos and rests in the user's feelings
 - Emotion: Transform the mood records into synesthetic movement instead of literal scenes
+- Avoid: Any text, lettering, signage, or written language
 
 Conduct a visual symphony that lets these emotions dance across the horizontal canvas.
 ''',
@@ -244,6 +249,7 @@ Artistic Requirements:
 - Composition: Wide cinematic framing with clean geometry and layered planes
 - Atmosphere: Optimistic warmth that honors everyday rituals and heartfelt reflections
 - Emotion: Channel the user's memories into radiant color fields instead of literal portraits
+- Avoid: Any text, lettering, signage, or written language
 
 Create a sunlit scene that frames these emotional notes as cherished snapshots of life.
 ''',
@@ -260,13 +266,13 @@ Create a sunlit scene that frames these emotional notes as cherished snapshots o
 
   /// 获取所有风格
   static List<ArtStyle> getAllStyles() => [
-        vanGogh,
-        monet,
-        picasso,
-        miyazaki,
-        kandinsky,
-        hockney,
-      ];
+    vanGogh,
+    monet,
+    picasso,
+    miyazaki,
+    kandinsky,
+    hockney,
+  ];
 
   /// 根据ID获取风格
   static ArtStyle? getStyleById(String id) {

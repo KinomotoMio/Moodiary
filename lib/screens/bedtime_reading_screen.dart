@@ -24,7 +24,8 @@ class BedtimeReadingScreen extends StatefulWidget {
 class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
     with SingleTickerProviderStateMixin {
   final DailySummaryService _summaryService = DailySummaryService.instance;
-  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
 
   DailySummary? _todaySummary;
   List<MoodFragment> _todayFragments = [];
@@ -42,9 +43,10 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
     _loadTodaySummary();
   }
 
@@ -101,9 +103,9 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
         _fadeController.reset();
         _fadeController.forward();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已重新生成睡前内容')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已重新生成睡前内容')));
       }
     } catch (e) {
       if (mounted) {
@@ -138,9 +140,7 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
 
   void _showHistoryList() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const BedtimeHistoryScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const BedtimeHistoryScreen()),
     );
   }
 
@@ -166,7 +166,9 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
           if (_todaySummary != null)
             IconButton(
               icon: Icon(
-                _todaySummary!.isFavorite ? Icons.favorite : Icons.favorite_border,
+                _todaySummary!.isFavorite
+                    ? Icons.favorite
+                    : Icons.favorite_border,
               ),
               onPressed: _toggleFavorite,
               tooltip: _todaySummary!.isFavorite ? '取消收藏' : '收藏',
@@ -244,7 +246,10 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
 
   Widget _buildDateHeader() {
     final theme = Theme.of(context);
-    final dateStr = DateFormat('MM月dd日 EEEE', 'zh_CN').format(_todaySummary!.date);
+    final dateStr = DateFormat(
+      'MM月dd日 EEEE',
+      'zh_CN',
+    ).format(_todaySummary!.date);
     final isToday = _todaySummary!.isToday;
 
     return Column(
@@ -293,53 +298,10 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
   }
 
   String _buildDailyEmotionSummary() {
-    final summary = _todaySummary!;
-    final lines = <String>[];
-
-    if (summary.averageScore != null || summary.dominantMood != null) {
-      final scorePart = summary.averageScore != null
-          ? '平均情绪分 ${summary.averageScore!.toStringAsFixed(1)}'
-          : null;
-      final moodPart = summary.dominantMood != null
-          ? '主导情绪 ${summary.dominantMood!.displayName}'
-          : null;
-      lines.add(
-        [
-          '今日情绪概览',
-          if (scorePart != null) scorePart,
-          if (moodPart != null) moodPart,
-          '共 ${summary.fragmentCount} 条记录'
-        ].join(' · '),
-      );
-    } else {
-      lines.add('今日共记录 ${summary.fragmentCount} 条心情片段');
-    }
-
-    lines.add('事件回顾：${_truncate(summary.eventSummary)}');
-    lines.add('情绪流向：${_truncate(summary.emotionReview)}');
-    lines.add('正念引导：${_truncate(summary.meditationGuide)}');
-
-    final meaningfulFragments = _todayFragments
-        .where((fragment) => fragment.displayContent.trim().isNotEmpty)
-        .take(3)
-        .toList();
-
-    if (meaningfulFragments.isNotEmpty) {
-      lines.add('代表记录：');
-      for (final fragment in meaningfulFragments) {
-        final timeStr = DateFormat('HH:mm').format(fragment.timestamp);
-        lines.add(
-          '• $timeStr ${fragment.mood.displayName}：${_truncate(fragment.displayContent, maxLength: 90)}',
-        );
-      }
-    }
-
-    return lines.join('\n');
-  }
-
-  String _truncate(String text, {int maxLength = 180}) {
-    if (text.length <= maxLength) return text;
-    return '${text.substring(0, maxLength).trim()}…';
+    return composeDailyEmotionSummary(
+      summary: _todaySummary!,
+      fragments: _todayFragments,
+    );
   }
 
   Future<List<MoodFragment>> _fetchFragmentsForDate(DateTime date) async {
@@ -421,7 +383,9 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.5,
+            ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: iconColor.withValues(alpha: 0.2),
@@ -515,11 +479,7 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 24),
             Text(
               _errorMessage ?? '加载失败',
@@ -535,6 +495,322 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
               icon: const Icon(Icons.refresh),
               label: const Text('重试'),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String composeDailyEmotionSummary({
+  required DailySummary summary,
+  required List<MoodFragment> fragments,
+}) {
+  final lines = <String>[];
+
+  if (summary.averageScore != null || summary.dominantMood != null) {
+    final scorePart = summary.averageScore != null
+        ? '平均情绪分 ${summary.averageScore!.toStringAsFixed(1)}'
+        : null;
+    final moodPart = summary.dominantMood != null
+        ? '主导情绪 ${summary.dominantMood!.displayName}'
+        : null;
+    lines.add(
+      [
+        '今日情绪概览',
+        if (scorePart != null) scorePart,
+        if (moodPart != null) moodPart,
+        '共 ${summary.fragmentCount} 条记录',
+      ].join(' · '),
+    );
+  } else {
+    lines.add('今日共记录 ${summary.fragmentCount} 条心情片段');
+  }
+
+  lines.add('事件回顾：${truncateWithEllipsis(summary.eventSummary)}');
+  lines.add('情绪流向：${truncateWithEllipsis(summary.emotionReview)}');
+  lines.add('正念引导：${truncateWithEllipsis(summary.meditationGuide)}');
+
+  final meaningfulFragments = fragments
+      .where((fragment) => fragment.displayContent.trim().isNotEmpty)
+      .take(3)
+      .toList();
+
+  if (meaningfulFragments.isNotEmpty) {
+    final timeFormat = DateFormat('HH:mm', 'zh_CN');
+    lines.add('代表记录：');
+    for (final fragment in meaningfulFragments) {
+      lines.add(
+        '• ${timeFormat.format(fragment.timestamp)} ${fragment.mood.displayName}：${truncateWithEllipsis(fragment.displayContent, maxLength: 90)}',
+      );
+    }
+  }
+
+  return lines.join('\n');
+}
+
+String truncateWithEllipsis(String text, {int maxLength = 180}) {
+  if (text.length <= maxLength) return text;
+  return '${text.substring(0, maxLength).trim()}…';
+}
+
+class BedtimeSummaryDetailScreen extends StatefulWidget {
+  final DailySummary summary;
+
+  const BedtimeSummaryDetailScreen({super.key, required this.summary});
+
+  @override
+  State<BedtimeSummaryDetailScreen> createState() =>
+      _BedtimeSummaryDetailScreenState();
+}
+
+class _BedtimeSummaryDetailScreenState
+    extends State<BedtimeSummaryDetailScreen> {
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
+
+  late DailySummary _summary;
+  List<MoodFragment> _fragments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _summary = widget.summary;
+    _loadFragments();
+  }
+
+  Future<void> _loadFragments() async {
+    final startOfDay = DateTime(
+      _summary.date.year,
+      _summary.date.month,
+      _summary.date.day,
+    );
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final fragments = await _fragmentStorage.getFragmentsByDateRange(
+      startOfDay,
+      endOfDay,
+    );
+    if (!mounted) return;
+    setState(() {
+      _fragments = fragments;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateStr = DateFormat('yyyy年MM月dd日', 'zh_CN').format(_summary.date);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(dateStr),
+      ),
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ImpressionImageBanner(
+                    emotionSummary: composeDailyEmotionSummary(
+                      summary: _summary,
+                      fragments: _fragments,
+                    ),
+                    timeRange: DateFormat(
+                      'MM月dd日',
+                      'zh_CN',
+                    ).format(_summary.date),
+                    height: 180,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildMetaChips(theme),
+                  const SizedBox(height: 24),
+                  _buildDetailSection(
+                    theme: theme,
+                    icon: Icons.event_note_outlined,
+                    iconColor: const Color(0xFF64b5f6),
+                    title: '今日事件',
+                    content: _summary.eventSummary,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailSection(
+                    theme: theme,
+                    icon: Icons.favorite_border,
+                    iconColor: const Color(0xFFef5350),
+                    title: '情绪流向',
+                    content: _summary.emotionReview,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailSection(
+                    theme: theme,
+                    icon: Icons.self_improvement_outlined,
+                    iconColor: const Color(0xFF9575cd),
+                    title: '正念冥想',
+                    content: _summary.meditationGuide,
+                  ),
+                  if (_fragments.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildFragmentList(theme),
+                  ],
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildMetaChips(ThemeData theme) {
+    final chips = <Widget>[];
+
+    if (_summary.averageScore != null) {
+      chips.add(
+        _buildChip(theme, '平均分 ${_summary.averageScore!.toStringAsFixed(1)}'),
+      );
+    }
+    if (_summary.dominantMood != null) {
+      chips.add(
+        _buildChip(theme, '主导情绪 ${_summary.dominantMood!.displayName}'),
+      );
+    }
+    chips.add(_buildChip(theme, '记录 ${_summary.fragmentCount} 条'));
+
+    return Wrap(spacing: 8, runSpacing: 8, children: chips);
+  }
+
+  Widget _buildChip(ThemeData theme, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: theme.colorScheme.onPrimaryContainer,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection({
+    required ThemeData theme,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String content,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              content,
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 14,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFragmentList(ThemeData theme) {
+    final timeFormat = DateFormat('HH:mm', 'zh_CN');
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.notes_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '当日心情片段',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ..._fragments.take(10).map((fragment) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${timeFormat.format(fragment.timestamp)} · ${fragment.mood.displayName}',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      truncateWithEllipsis(
+                        fragment.displayContent.isNotEmpty
+                            ? fragment.displayContent
+                            : fragment.fullContent,
+                      ),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -596,8 +872,11 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
   }
 
   void _viewSummary(DailySummary summary) {
-    // TODO: 实现查看具体某天的睡前内容
-    // 可以复用 BedtimeReadingScreen 或创建一个详情页面
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BedtimeSummaryDetailScreen(summary: summary),
+      ),
+    );
   }
 
   @override
@@ -622,18 +901,20 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
       ),
       body: _isLoading
           ? Center(
-              child: CircularProgressIndicator(color: theme.colorScheme.primary),
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
             )
           : _summaries.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _summaries.length,
-                  itemBuilder: (context, index) {
-                    final summary = _summaries[index];
-                    return _buildHistoryItem(summary);
-                  },
-                ),
+          ? _buildEmptyState()
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _summaries.length,
+              itemBuilder: (context, index) {
+                final summary = _summaries[index];
+                return _buildHistoryItem(summary);
+              },
+            ),
     );
   }
 
@@ -648,7 +929,9 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
         contentPadding: const EdgeInsets.all(16),
         leading: Icon(
           summary.isFavorite ? Icons.favorite : Icons.bedtime_outlined,
-          color: summary.isFavorite ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant,
+          color: summary.isFavorite
+              ? theme.colorScheme.error
+              : theme.colorScheme.onSurfaceVariant,
           size: 28,
         ),
         title: Row(
