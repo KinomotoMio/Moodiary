@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/insight_report.dart';
 import '../models/mood_entry.dart';
+import '../models/mood_fragment.dart';
+import '../services/fragment_storage_service.dart';
 import '../services/insight_report_service.dart';
 import '../widgets/impression_image_banner.dart';
 
@@ -591,7 +593,9 @@ class ReportDetailScreen extends StatefulWidget {
 class _ReportDetailScreenState extends State<ReportDetailScreen>
     with SingleTickerProviderStateMixin {
   final InsightReportService _reportService = InsightReportService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
   late InsightReport _report;
+  List<MoodFragment> _reportFragments = [];
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -607,6 +611,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
     );
     _fadeController.forward();
+    _loadFragments();
   }
 
   @override
@@ -678,6 +683,16 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
     );
   }
 
+  Future<void> _loadFragments() async {
+    final start = DateTime(_report.startDate.year, _report.startDate.month, _report.startDate.day);
+    final end = DateTime(_report.endDate.year, _report.endDate.month, _report.endDate.day).add(const Duration(days: 1));
+    final fragments = await _fragmentStorage.getFragmentsByDateRange(start, end);
+    if (!mounted) return;
+    setState(() {
+      _reportFragments = fragments;
+    });
+  }
+
   Widget _buildImpressionBanner() {
     return ImpressionImageBanner(
       emotionSummary: _buildReportEmotionSummary(),
@@ -703,6 +718,21 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
 
     if (_report.emotionPattern.isNotEmpty) {
       lines.add('情绪模式：${_truncate(_report.emotionPattern)}');
+    }
+
+    final meaningfulFragments = _reportFragments
+        .where((fragment) => fragment.displayContent.trim().isNotEmpty)
+        .take(4)
+        .toList();
+
+    if (meaningfulFragments.isNotEmpty) {
+      lines.add('代表心情记录：');
+      for (final fragment in meaningfulFragments) {
+        final timeLabel = DateFormat('MM.dd HH:mm').format(fragment.timestamp);
+        lines.add(
+          '• $timeLabel ${fragment.mood.displayName}：${_truncate(fragment.displayContent, maxLength: 100)}',
+        );
+      }
     }
 
     return lines.join('\n');

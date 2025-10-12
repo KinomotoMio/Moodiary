@@ -276,18 +276,4 @@ Create a sunlit scene that frames these emotional notes as cherished snapshots o
       return null;
     }
   }
-
-  /// 根据情绪类型推荐风格
-  static ArtStyle recommendByMood(String moodType) {
-    switch (moodType.toLowerCase()) {
-      case 'positive':
-        return hockney; // 阳光回忆 - 适合积极情绪
-      case 'negative':
-        return vanGogh; // 星空印象 - 适合复杂情绪
-      case 'neutral':
-        return monet; // 睡莲之梦 - 适合平静情绪
-      default:
-        return miyazaki; // 治愈之境 - 通用温暖
-    }
-  }
 }

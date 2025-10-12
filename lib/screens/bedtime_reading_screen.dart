@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/daily_summary.dart';
 import '../models/mood_entry.dart';
+import '../models/mood_fragment.dart';
 import '../services/daily_summary_service.dart';
+import '../services/fragment_storage_service.dart';
 import '../widgets/impression_image_banner.dart';
 
 /// 睡前阅读页面
@@ -22,8 +24,10 @@ class BedtimeReadingScreen extends StatefulWidget {
 class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
     with SingleTickerProviderStateMixin {
   final DailySummaryService _summaryService = DailySummaryService.instance;
+  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
 
   DailySummary? _todaySummary;
+  List<MoodFragment> _todayFragments = [];
   bool _isLoading = true;
   bool _isGenerating = false;
   String? _errorMessage;
@@ -58,9 +62,11 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
 
     try {
       final summary = await _summaryService.generateTodaySummary();
+      final fragments = await _fetchFragmentsForDate(summary.date);
       if (mounted) {
         setState(() {
           _todaySummary = summary;
+          _todayFragments = fragments;
           _isLoading = false;
         });
         _fadeController.forward();
@@ -85,9 +91,11 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
       final summary = await _summaryService.generateTodaySummary(
         forceRegenerate: true,
       );
+      final fragments = await _fetchFragmentsForDate(summary.date);
       if (mounted) {
         setState(() {
           _todaySummary = summary;
+          _todayFragments = fragments;
           _isGenerating = false;
         });
         _fadeController.reset();
@@ -311,12 +319,37 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
     lines.add('情绪流向：${_truncate(summary.emotionReview)}');
     lines.add('正念引导：${_truncate(summary.meditationGuide)}');
 
+    final meaningfulFragments = _todayFragments
+        .where((fragment) => fragment.displayContent.trim().isNotEmpty)
+        .take(3)
+        .toList();
+
+    if (meaningfulFragments.isNotEmpty) {
+      lines.add('代表记录：');
+      for (final fragment in meaningfulFragments) {
+        final timeStr = DateFormat('HH:mm').format(fragment.timestamp);
+        lines.add(
+          '• $timeStr ${fragment.mood.displayName}：${_truncate(fragment.displayContent, maxLength: 90)}',
+        );
+      }
+    }
+
     return lines.join('\n');
   }
 
   String _truncate(String text, {int maxLength = 180}) {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength).trim()}…';
+  }
+
+  Future<List<MoodFragment>> _fetchFragmentsForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final fragments = await _fragmentStorage.getFragmentsByDateRange(
+      startOfDay,
+      endOfDay,
+    );
+    return fragments;
   }
 
   Widget _buildEventSummarySection() {
