@@ -20,8 +20,8 @@ class ArtStyle {
   /// AI绘图提示词模板
   final String promptTemplate;
 
-  /// 预设图片URL（降级方案）
-  final String fallbackImageUrl;
+  /// 预设图片URLs（降级方案，支持多张随机选择）
+  final List<String> fallbackImageUrls;
 
   /// 情绪色彩主题（用于方案C本地渲染）
   final List<String> colorTheme;
@@ -33,7 +33,7 @@ class ArtStyle {
     required this.artistBio,
     required this.description,
     required this.promptTemplate,
-    required this.fallbackImageUrl,
+    required this.fallbackImageUrls,
     required this.colorTheme,
   });
 
@@ -74,7 +74,14 @@ Style characteristics:
 
 The painting should capture the essence of the emotions rather than literal representation.
 ''',
-    fallbackImageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=400&fit=crop',
+    fallbackImageUrls: [
+      'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1444930694458-01babf71c7cd?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&h=400&fit=crop',
+    ],
     colorTheme: ['#1e3a8a', '#fbbf24', '#f59e0b', '#06b6d4'],
   );
 
@@ -103,7 +110,13 @@ Style characteristics:
 
 The painting should evoke a sense of tranquility and emotional reflection.
 ''',
-    fallbackImageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&h=400&fit=crop',
+    fallbackImageUrls: [
+      'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&h=400&fit=crop',
+    ],
     colorTheme: ['#a7f3d0', '#6ee7b7', '#93c5fd', '#ddd6fe'],
   );
 
@@ -132,7 +145,13 @@ Style characteristics:
 
 The painting should express emotional complexity through geometric abstraction.
 ''',
-    fallbackImageUrl: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=800&h=400&fit=crop',
+    fallbackImageUrls: [
+      'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1515266591878-f93e32bc5937?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1552083974-186346191183?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&h=400&fit=crop',
+    ],
     colorTheme: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6'],
   );
 
@@ -161,7 +180,14 @@ Style characteristics:
 
 The artwork should evoke feelings of warmth, healing, and wonder.
 ''',
-    fallbackImageUrl: 'https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=800&h=400&fit=crop',
+    fallbackImageUrls: [
+      'https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&h=400&fit=crop',
+    ],
     colorTheme: ['#86efac', '#7dd3fc', '#fde047', '#fda4af'],
   );
 
@@ -190,7 +216,13 @@ Style characteristics:
 
 The painting should feel like visual music, expressing emotions through pure abstraction.
 ''',
-    fallbackImageUrl: 'https://images.unsplash.com/photo-1549887534-1541e9326642?w=800&h=400&fit=crop',
+    fallbackImageUrls: [
+      'https://images.unsplash.com/photo-1549887534-1541e9326642?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1551089546-6897aab58502?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop',
+    ],
     colorTheme: ['#ec4899', '#f59e0b', '#3b82f6', '#10b981'],
   );
 
@@ -219,7 +251,14 @@ Style characteristics:
 
 The artwork should radiate warmth and capture the beauty of everyday moments.
 ''',
-    fallbackImageUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800&h=400&fit=crop',
+    fallbackImageUrls: [
+      'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=400&fit=crop',
+    ],
     colorTheme: ['#06b6d4', '#10b981', '#fbbf24', '#f472b6'],
   );
 

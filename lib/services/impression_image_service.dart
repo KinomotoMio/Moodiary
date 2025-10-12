@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,10 +113,15 @@ class ImpressionImageService {
     }
   }
 
-  /// 方案A：使用预设图片
+  /// 方案A：使用预设图片（随机选择）
   ImpressionImageResult _generateWithPreset(ArtStyle style) {
+    // 从多张预设图片中随机选择一张
+    final random = Random();
+    final randomIndex = random.nextInt(style.fallbackImageUrls.length);
+    final selectedUrl = style.fallbackImageUrls[randomIndex];
+
     return ImpressionImageResult(
-      imageUrl: style.fallbackImageUrl,
+      imageUrl: selectedUrl,
       style: style,
       generationMode: GenerationMode.preset,
       isLocal: false,
