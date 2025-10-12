@@ -121,11 +121,12 @@ class AppSettings {
     switch (provider) {
       case 'siliconflow':
         return [
-          'Qwen/Qwen2.5-72B-Instruct',
           'deepseek-ai/DeepSeek-V3',
-          'Qwen/Qwen2.5-32B-Instruct',
-          'Qwen/Qwen2.5-14B-Instruct',
-          'Qwen/Qwen2.5-7B-Instruct',
+          'deepseek-ai/DeepSeek-V3.2-Exp',
+          'deepseek-ai/DeepSeek-R1',
+          'zai-org/GLM-4.6',
+          'moonshotai/Kimi-K2-Instruct-0905',
+          'Qwen/Qwen3-235B-A22B-Instruct-2507',
         ];
       case 'deepseek':
         return [
@@ -153,8 +154,21 @@ class AppSettings {
   static String getModelDisplayName(String provider, String model) {
     switch (provider) {
       case 'siliconflow':
-        final modelName = model.split('/').last; // 去除命名空间前缀
-        return 'SiliconFlow - $modelName';
+        // 提取模型简短名称
+        if (model.contains('DeepSeek-V3.2')) {
+          return 'DeepSeek-V3.2-Exp';
+        } else if (model.contains('DeepSeek-V3')) {
+          return 'DeepSeek-V3';
+        } else if (model.contains('DeepSeek-R1')) {
+          return 'DeepSeek-R1';
+        } else if (model.contains('GLM-4.6')) {
+          return 'GLM-4.6';
+        } else if (model.contains('Kimi-K2')) {
+          return 'Kimi K2';
+        } else if (model.contains('Qwen3-235B')) {
+          return 'Qwen3-235B';
+        }
+        return model.split('/').last;
       case 'deepseek':
         return 'DeepSeek - ${model.replaceAll('deepseek-', '').replaceAll('-', ' ').toUpperCase()}';
       default:

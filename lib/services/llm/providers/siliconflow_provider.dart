@@ -45,12 +45,16 @@ class SiliconFlowProvider implements BaseLLMProvider {
   bool get requiresApiKey => true;
   
   @override
-  String get defaultModel => 'Qwen/Qwen3-14B';
-  
+  String get defaultModel => 'deepseek-ai/DeepSeek-V3';
+
   @override
   List<String> get supportedModels => [
-    'Qwen/Qwen3-14B',
     'deepseek-ai/DeepSeek-V3',
+    'deepseek-ai/DeepSeek-V3.2-Exp',
+    'deepseek-ai/DeepSeek-R1',
+    'zai-org/GLM-4.6',
+    'moonshotai/Kimi-K2-Instruct-0905',
+    'Qwen/Qwen3-235B-A22B-Instruct-2507',
   ];
   
   @override
@@ -224,18 +228,50 @@ class SiliconFlowProvider implements BaseLLMProvider {
     // 返回支持的模型列表
     return [
       const LLMModelInfo(
-        name: 'Qwen/Qwen3-14B',
-        displayName: 'Qwen3-14B (推荐)',
-        description: '通义千问3代14B模型，中文理解和推理能力优秀',
+        name: 'deepseek-ai/DeepSeek-V3',
+        displayName: 'DeepSeek-V3 (推荐)',
+        description: '强化学习优化，推理能力强，适合复杂情绪分析和心理洞察',
         maxContextLength: 131072, // 128K
         supportsChinese: true,
         isAvailable: true,
       ),
       const LLMModelInfo(
-        name: 'deepseek-ai/DeepSeek-V3',
-        displayName: 'DeepSeek-V3',
-        description: 'DeepSeek最新V3模型，推理和代码能力强',
-        maxContextLength: 131072, // 128K
+        name: 'deepseek-ai/DeepSeek-V3.2-Exp',
+        displayName: 'DeepSeek-V3.2-Exp',
+        description: '实验性长文本处理优化，适合追溯更久远的情绪历史',
+        maxContextLength: 131072,
+        supportsChinese: true,
+        isAvailable: true,
+      ),
+      const LLMModelInfo(
+        name: 'deepseek-ai/DeepSeek-R1',
+        displayName: 'DeepSeek-R1',
+        description: '推理驱动型模型，擅长深度情绪分析和专业心理建议',
+        maxContextLength: 131072,
+        supportsChinese: true,
+        isAvailable: true,
+      ),
+      const LLMModelInfo(
+        name: 'zai-org/GLM-4.6',
+        displayName: 'GLM-4.6',
+        description: '200K上下文窗口，适合长期情绪模式识别和追踪',
+        maxContextLength: 204800, // 200K
+        supportsChinese: true,
+        isAvailable: true,
+      ),
+      const LLMModelInfo(
+        name: 'moonshotai/Kimi-K2-Instruct-0905',
+        displayName: 'Kimi K2',
+        description: 'Kimi旗舰模型，智能对话体验优秀，温暖陪伴式交流',
+        maxContextLength: 131072,
+        supportsChinese: true,
+        isAvailable: true,
+      ),
+      const LLMModelInfo(
+        name: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
+        displayName: 'Qwen3-235B',
+        description: '通义千问旗舰，256K超长上下文，全面的情绪理解能力',
+        maxContextLength: 262144, // 256K
         supportsChinese: true,
         isAvailable: true,
       ),
