@@ -906,23 +906,27 @@ class _BedtimeHistoryScreenState extends State<BedtimeHistoryScreen> {
     }
 
     try {
-      final summaries = await _summaryService.getHistorySummaries(
+      final allSummaries = await _summaryService.getHistorySummaries(
         limit: 60,
-        onlyFavorites: _showOnlyFavorites,
+        onlyFavorites: false,
       );
 
       final todayId = DailySummary.getIdFromDate(DateTime.now());
       DailySummary? todaySummary;
-      for (final summary in summaries) {
+      for (final summary in allSummaries) {
         if (summary.id == todayId) {
           todaySummary = summary;
           break;
         }
       }
 
+      final filteredSummaries = _showOnlyFavorites
+          ? allSummaries.where((summary) => summary.isFavorite).toList()
+          : allSummaries;
+
       if (mounted) {
         setState(() {
-          _summaries = summaries;
+          _summaries = filteredSummaries;
           _todaySummary = todaySummary;
           _isLoading = false;
         });
