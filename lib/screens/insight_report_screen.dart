@@ -679,15 +679,38 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
   }
 
   Widget _buildImpressionBanner() {
-    // 生成情绪数据摘要
-    final stats = _report.stats;
-    final emotionSummary = '平均情绪分${stats.averageScore.toStringAsFixed(1)}，${stats.dominantMood?.displayName ?? "情绪多样"}为主，${stats.totalEntries}条记录';
-
     return ImpressionImageBanner(
-      emotionSummary: emotionSummary,
+      emotionSummary: _buildReportEmotionSummary(),
       timeRange: _report.dateRangeDescription,
       height: 200,
     );
+  }
+
+  String _buildReportEmotionSummary() {
+    final stats = _report.stats;
+    final lines = <String>[
+      '周期情绪概览：平均分 ${stats.averageScore.toStringAsFixed(1)} · ${stats.dominantMood?.displayName ?? "情绪多样"}为主 · 共 ${stats.totalEntries} 条记录',
+    ];
+
+    if (stats.topTags.isNotEmpty) {
+      final tagPreview = stats.topTags.take(4).join('、');
+      lines.add('高频主题：$tagPreview');
+    }
+
+    if (_report.coreInsight.isNotEmpty) {
+      lines.add('核心洞察：${_truncate(_report.coreInsight)}');
+    }
+
+    if (_report.emotionPattern.isNotEmpty) {
+      lines.add('情绪模式：${_truncate(_report.emotionPattern)}');
+    }
+
+    return lines.join('\n');
+  }
+
+  String _truncate(String text, {int maxLength = 220}) {
+    if (text.length <= maxLength) return text;
+    return '${text.substring(0, maxLength).trim()}…';
   }
 
   Widget _buildStatsOverview() {

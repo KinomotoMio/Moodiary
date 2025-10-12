@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/daily_summary.dart';
+import '../models/mood_entry.dart';
 import '../services/daily_summary_service.dart';
 import '../widgets/impression_image_banner.dart';
 
@@ -276,15 +277,46 @@ class _BedtimeReadingScreenState extends State<BedtimeReadingScreen>
   }
 
   Widget _buildImpressionBanner() {
-    // 生成情绪数据摘要
-    final dateStr = DateFormat('MM月dd日', 'zh_CN').format(_todaySummary!.date);
-    final emotionSummary = '${_todaySummary!.emotionReview.substring(0, _todaySummary!.emotionReview.length > 50 ? 50 : _todaySummary!.emotionReview.length)}...';
-
     return ImpressionImageBanner(
-      emotionSummary: emotionSummary,
-      timeRange: dateStr,
+      emotionSummary: _buildDailyEmotionSummary(),
+      timeRange: DateFormat('MM月dd日', 'zh_CN').format(_todaySummary!.date),
       height: 180,
     );
+  }
+
+  String _buildDailyEmotionSummary() {
+    final summary = _todaySummary!;
+    final lines = <String>[];
+
+    if (summary.averageScore != null || summary.dominantMood != null) {
+      final scorePart = summary.averageScore != null
+          ? '平均情绪分 ${summary.averageScore!.toStringAsFixed(1)}'
+          : null;
+      final moodPart = summary.dominantMood != null
+          ? '主导情绪 ${summary.dominantMood!.displayName}'
+          : null;
+      lines.add(
+        [
+          '今日情绪概览',
+          if (scorePart != null) scorePart,
+          if (moodPart != null) moodPart,
+          '共 ${summary.fragmentCount} 条记录'
+        ].join(' · '),
+      );
+    } else {
+      lines.add('今日共记录 ${summary.fragmentCount} 条心情片段');
+    }
+
+    lines.add('事件回顾：${_truncate(summary.eventSummary)}');
+    lines.add('情绪流向：${_truncate(summary.emotionReview)}');
+    lines.add('正念引导：${_truncate(summary.meditationGuide)}');
+
+    return lines.join('\n');
+  }
+
+  String _truncate(String text, {int maxLength = 180}) {
+    if (text.length <= maxLength) return text;
+    return '${text.substring(0, maxLength).trim()}…';
   }
 
   Widget _buildEventSummarySection() {
