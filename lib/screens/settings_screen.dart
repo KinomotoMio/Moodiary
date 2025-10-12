@@ -10,7 +10,7 @@ import '../models/art_style.dart';
 import '../enums/analysis_method.dart';
 
 /// 设置页面
-/// 
+///
 /// 提供用户配置选项，包括：
 /// - 情绪分析方式选择
 /// - AI服务配置
@@ -26,9 +26,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settingsService = SettingsService.instance;
   final EmotionService _emotionService = EmotionService.instance;
-  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
   final NotificationService _notificationService = NotificationService.instance;
-  final ImpressionImageService _impressionService = ImpressionImageService.instance;
+  final ImpressionImageService _impressionService =
+      ImpressionImageService.instance;
 
   final bool _isLoading = false;
   AnalysisStrategyStatus? _strategyStatus;
@@ -51,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
+    await _notificationService.initialize();
     // 加载提醒设置
     final reminderEnabled = await _notificationService.isReminderEnabled();
     final reminderTimeStr = await _notificationService.getReminderTime();
@@ -79,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _testAPIConnection() async {
     if (_isTesting) return;
-    
+
     setState(() {
       _isTesting = true;
       _strategyStatus = null; // 重置之前的测试状态
@@ -92,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _strategyStatus = status;
           _isTesting = false;
         });
-        
+
         if (status.isAvailable) {
           _showSuccessSnackBar('API连通性测试成功');
         } else {
@@ -136,42 +139,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('设置'),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
-            onRefresh: _loadSettings,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildAnalysisSection(),
-                  const SizedBox(height: 24),
-                  if (_settingsService.analysisMethod == AnalysisMethod.llm) ...[
-                    _buildAIConfigSection(),
+      appBar: AppBar(title: const Text('设置'), centerTitle: true, elevation: 0),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadSettings,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAnalysisSection(),
                     const SizedBox(height: 24),
+                    if (_settingsService.analysisMethod ==
+                        AnalysisMethod.llm) ...[
+                      _buildAIConfigSection(),
+                      const SizedBox(height: 24),
+                    ],
+                    _buildReminderSection(),
+                    const SizedBox(height: 24),
+                    _buildImpressionImageSection(),
+                    const SizedBox(height: 24),
+                    _buildArtStyleSection(),
+                    const SizedBox(height: 24),
+                    _buildDataSection(),
+                    const SizedBox(height: 24),
+                    _buildAboutSection(),
+                    const SizedBox(height: 24),
+                    _buildDeveloperSection(),
                   ],
-                  _buildReminderSection(),
-                  const SizedBox(height: 24),
-                  _buildImpressionImageSection(),
-                  const SizedBox(height: 24),
-                  _buildArtStyleSection(),
-                  const SizedBox(height: 24),
-                  _buildDataSection(),
-                  const SizedBox(height: 24),
-                  _buildAboutSection(),
-                  const SizedBox(height: 24),
-                  _buildDeveloperSection(),
-                ],
+                ),
               ),
             ),
-          ),
     );
   }
 
@@ -199,12 +199,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // 分析方式选择
             _buildAnalysisMethodSelector(),
-            
+
             const SizedBox(height: 16),
-            
+
             // 分析状态显示
             _buildAnalysisStatus(),
           ],
@@ -216,40 +216,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 分析方式选择器
   Widget _buildAnalysisMethodSelector() {
     final currentMethod = _settingsService.analysisMethod;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '分析方式',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text('分析方式', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
-        ...AnalysisMethod.values.map((method) => 
-          _buildAnalysisMethodTile(method, currentMethod),
+        ...AnalysisMethod.values.map(
+          (method) => _buildAnalysisMethodTile(method, currentMethod),
         ),
       ],
     );
   }
 
   /// 分析方式选项
-  Widget _buildAnalysisMethodTile(AnalysisMethod method, AnalysisMethod currentMethod) {
+  Widget _buildAnalysisMethodTile(
+    AnalysisMethod method,
+    AnalysisMethod currentMethod,
+  ) {
     final isSelected = method == currentMethod;
     final isAvailable = method.isAvailable;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
         elevation: isSelected ? 2 : 0,
-        color: isSelected 
-          ? Theme.of(context).colorScheme.primaryContainer
-          : null,
+        color: isSelected
+            ? Theme.of(context).colorScheme.primaryContainer
+            : null,
         child: ListTile(
           leading: Icon(
-            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-            color: isAvailable 
-              ? (isSelected ? Theme.of(context).colorScheme.primary : null)
-              : Theme.of(context).disabledColor,
+            isSelected
+                ? Icons.radio_button_checked
+                : Icons.radio_button_unchecked,
+            color: isAvailable
+                ? (isSelected ? Theme.of(context).colorScheme.primary : null)
+                : Theme.of(context).disabledColor,
           ),
           title: Text(
             method.displayName,
@@ -270,9 +272,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (!isAvailable) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -296,30 +303,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 分析状态显示
   Widget _buildAnalysisStatus() {
     if (_strategyStatus == null) return const SizedBox.shrink();
-    
+
     final status = _strategyStatus!;
     final isHealthy = status.isAvailable;
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isHealthy 
-          ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-          : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+        color: isHealthy
+            ? Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : Theme.of(
+                context,
+              ).colorScheme.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isHealthy 
-            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-            : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+          color: isHealthy
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Icon(
             isHealthy ? Icons.check_circle_outlined : Icons.warning_outlined,
-            color: isHealthy 
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.error,
+            color: isHealthy
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.error,
             size: 20,
           ),
           const SizedBox(width: 8),
@@ -327,15 +338,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '当前状态',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text('当前状态', style: Theme.of(context).textTheme.bodySmall),
                 Text(
                   status.statusMessage,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -348,7 +356,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// AI配置区域
   Widget _buildAIConfigSection() {
     final currentSettings = _settingsService.currentSettings;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -371,15 +379,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // AI服务提供商选择
             _buildAIProviderSelector(currentSettings),
-            
+
             const SizedBox(height: 16),
-            
+
             // API密钥输入
             _buildAPIKeyInput(currentSettings),
-            
+
             if (currentSettings.llmProvider != null) ...[
               const SizedBox(height: 16),
               _buildConnectionTest(),
@@ -395,10 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'AI服务提供商',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text('AI服务提供商', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: currentSettings.llmProvider,
@@ -411,10 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: 'siliconflow',
               child: Text('SiliconFlow (推荐)'),
             ),
-            DropdownMenuItem(
-              value: 'deepseek',
-              child: Text('DeepSeek'),
-            ),
+            DropdownMenuItem(value: 'deepseek', child: Text('DeepSeek')),
           ],
           onChanged: (value) async {
             if (value != null) {
@@ -445,22 +447,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// API密钥输入框
   Widget _buildAPIKeyInput(AppSettings currentSettings) {
     final hasApiKey = currentSettings.llmApiKey?.isNotEmpty == true;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'API密钥',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text('API密钥', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         TextFormField(
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
             hintText: '输入API密钥',
-            suffixIcon: hasApiKey 
-              ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
-              : const Icon(Icons.key_outlined),
+            suffixIcon: hasApiKey
+                ? Icon(
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
+                : const Icon(Icons.key_outlined),
           ),
           obscureText: true,
           onChanged: (value) async {
@@ -496,18 +498,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildModelSelector(AppSettings currentSettings) {
     final provider = currentSettings.llmProvider!;
     final availableModels = AppSettings.getAvailableModels(provider);
-    final currentModel = currentSettings.llmModel ?? AppSettings.getDefaultModel(provider);
+    final currentModel =
+        currentSettings.llmModel ?? AppSettings.getDefaultModel(provider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '模型选择',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('模型选择', style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          initialValue: availableModels.contains(currentModel) ? currentModel : null,
+          initialValue: availableModels.contains(currentModel)
+              ? currentModel
+              : null,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             hintText: '选择AI模型',
@@ -532,7 +534,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() {
                   _strategyStatus = null;
                 });
-                _showSuccessSnackBar('AI模型已更新为 ${AppSettings.getModelDisplayName(provider, value)}');
+                _showSuccessSnackBar(
+                  'AI模型已更新为 ${AppSettings.getModelDisplayName(provider, value)}',
+                );
               } catch (e) {
                 _showErrorSnackBar('更新模型失败: $e');
               }
@@ -566,21 +570,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('连接测试', style: Theme.of(context).textTheme.bodySmall),
                 Text(
-                  '连接测试',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                Text(
-                  _isTesting 
-                      ? '测试中...' 
+                  _isTesting
+                      ? '测试中...'
                       : (_strategyStatus?.statusMessage ?? '点击测试按钮检查连接状态'),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: _isTesting 
+                    color: _isTesting
                         ? Theme.of(context).colorScheme.secondary
                         : (_strategyStatus?.isAvailable == true
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.error),
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.error),
                   ),
                 ),
               ],
@@ -608,7 +609,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showErrorSnackBar('打开链接失败: $e');
     }
   }
-  
+
   /// 打开GitHub Issues
   Future<void> _openGitHubIssues() async {
     try {
@@ -651,9 +652,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               leading: const Icon(Icons.alarm),
               title: const Text('启用提醒'),
-              subtitle: Text(_reminderEnabled
-                  ? '每天 ${_reminderTime.format(context)} 提醒你记录心情'
-                  : '关闭后不会收到提醒通知'),
+              subtitle: Text(
+                _reminderEnabled
+                    ? '每天 ${_reminderTime.format(context)} 提醒你记录心情'
+                    : '关闭后不会收到提醒通知',
+              ),
               trailing: Switch(
                 value: _reminderEnabled,
                 onChanged: (value) async {
@@ -725,10 +728,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
 
             // 生成模式选择
-            Text(
-              '生成方式',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            Text('生成方式', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             ...GenerationMode.values.map((mode) {
               final isSelected = mode == _generationMode;
@@ -741,7 +741,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : null,
                   child: ListTile(
                     leading: Icon(
-                      isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
                       color: isSelected
                           ? Theme.of(context).colorScheme.primary
                           : null,
@@ -749,7 +751,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text(
                       _getGenerationModeName(mode),
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     subtitle: Text(_getGenerationModeDescription(mode)),
@@ -773,7 +777,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('文生图API说明'),
                       content: const Text(
                         '当前使用SiliconFlow的文生图服务\n\n'
-                          '模型：Qwen/Qwen-Image\n'
+                        '模型：Qwen/Qwen-Image\n'
                         'API Key：复用对话模型配置\n\n'
                         '如果AI生成失败，会自动降级到预设图片模式',
                       ),
@@ -821,7 +825,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               '选择你喜欢的艺术风格，应用会用这种风格为你的心情生成印象画',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 16),
@@ -838,7 +844,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : Theme.of(context).colorScheme.surface,
                   child: ListTile(
                     leading: Icon(
-                      isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
                       color: isSelected
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.outline,
@@ -846,7 +854,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text(
                       '${style.name} - ${style.artist}',
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     subtitle: Text(
@@ -977,14 +987,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             ListTile(
               leading: const Icon(Icons.cleaning_services_outlined),
               title: const Text('清除分析缓存'),
               subtitle: const Text('清除情绪分析结果缓存，提升分析准确性'),
               onTap: _clearAnalysisCache,
             ),
-            
+
             ListTile(
               leading: Icon(
                 Icons.delete_outline,
@@ -992,9 +1002,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               title: Text(
                 '清除所有数据',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               subtitle: const Text('删除所有心情记录和设置（不可恢复）'),
               onTap: _showClearAllDataDialog,
@@ -1018,7 +1026,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           );
         }
-        
+
         final stats = snapshot.data!;
         return Column(
           children: [
@@ -1075,14 +1083,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
-  
+
   /// 统计项目组件
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Container(
       margin: const EdgeInsets.all(4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1091,43 +1101,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );
   }
-  
+
   /// 获取应用统计数据
   Future<Map<String, dynamic>> _getAppStatistics() async {
     try {
       final fragments = await _fragmentStorage.getAllFragments();
       final settings = _settingsService.currentSettings;
-      
+
       // 计算使用天数（从第一条记录到现在）
       int usageDays = 0;
       if (fragments.isNotEmpty) {
         final firstFragment = fragments.last; // 按时间降序排列，最后一个是最早的
-        final daysSinceFirst = DateTime.now().difference(firstFragment.timestamp).inDays;
+        final daysSinceFirst = DateTime.now()
+            .difference(firstFragment.timestamp)
+            .inDays;
         usageDays = daysSinceFirst + 1; // 包含今天
       }
-      
+
       // 计算平均情绪分数
       double averageScore = 0.0;
       if (fragments.isNotEmpty) {
-        final totalScore = fragments.fold<int>(0, (sum, fragment) => sum + fragment.emotionScore);
+        final totalScore = fragments.fold<int>(
+          0,
+          (sum, fragment) => sum + fragment.emotionScore,
+        );
         averageScore = totalScore / fragments.length;
       }
-      
+
       // 获取当前分析方式
       String currentMethod = settings.analysisMethod.displayName;
-      
+
       return {
         'totalEntries': fragments.length,
         'usageDays': usageDays,
@@ -1150,7 +1162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
@@ -1181,7 +1195,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _getStoryText(),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               height: 1.6,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -1230,18 +1246,20 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
               ],
             ),
             const SizedBox(height: 16),
-            
+
             const ListTile(
               leading: Icon(Icons.mobile_friendly_outlined),
               title: Text('Moodiary'),
-              subtitle: Text('版本 v1.0.0-beta.1 · 静海 (Tranquillity)\nPhase 3 - AI增强版\n温暖治愈的AI心情日记'),
+              subtitle: Text(
+                '版本 v1.0.0-beta.1 · 静海 (Tranquillity)\nPhase 3 - AI增强版\n温暖治愈的AI心情日记',
+              ),
             ),
-            
+
             const Divider(),
             _buildStatsSection(),
-            
+
             const Divider(),
-            
+
             ListTile(
               leading: const Icon(Icons.favorite_outlined),
               title: const Text('开源项目'),
@@ -1251,7 +1269,7 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
                 _openGitHubRepo();
               },
             ),
-            
+
             ListTile(
               leading: const Icon(Icons.bug_report_outlined),
               title: const Text('问题反馈'),
@@ -1261,13 +1279,15 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
                 _openGitHubIssues();
               },
             ),
-            
+
             ListTile(
               leading: const Icon(Icons.info_outlined),
               title: const Text('AI功能说明'),
-              subtitle: const Text('支持SiliconFlow、DeepSeek多种AI服务\n数据本地存储，仅分析时调用API'),
+              subtitle: const Text(
+                '支持SiliconFlow、DeepSeek多种AI服务\n数据本地存储，仅分析时调用API',
+              ),
             ),
-            
+
             const Divider(),
             _buildStorySection(),
           ],
@@ -1300,14 +1320,14 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
               ],
             ),
             const SizedBox(height: 16),
-            
+
             ListTile(
               leading: const Icon(Icons.analytics_outlined),
               title: const Text('缓存统计'),
               subtitle: const Text('查看分析结果缓存使用情况'),
               onTap: _showCacheStats,
             ),
-            
+
             ListTile(
               leading: const Icon(Icons.refresh_outlined),
               title: const Text('刷新策略状态'),
@@ -1325,29 +1345,28 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
     try {
       final currentSettings = _settingsService.currentSettings;
       AppSettings newSettings;
-      
+
       if (method == AnalysisMethod.llm) {
         // 切换到AI分析时，提供默认的配置
         newSettings = currentSettings.copyWith(
           analysisMethod: method,
-          llmProvider: currentSettings.llmProvider ?? 'siliconflow', // 默认使用SiliconFlow
+          llmProvider:
+              currentSettings.llmProvider ?? 'siliconflow', // 默认使用SiliconFlow
           // 不设置API密钥，让用户后续配置
         );
       } else {
         // 切换到规则分析或本地AI
-        newSettings = currentSettings.copyWith(
-          analysisMethod: method,
-        );
+        newSettings = currentSettings.copyWith(analysisMethod: method);
       }
-      
+
       await _settingsService.updateSettings(newSettings);
       _showSuccessSnackBar('分析方式已更改为${method.displayName}');
-      
+
       // 重置API测试状态，因为配置发生了变化
       setState(() {
         _strategyStatus = null;
       });
-      
+
       if (method == AnalysisMethod.llm && newSettings.llmApiKey == null) {
         // 提示用户配置API密钥
         Future.delayed(const Duration(milliseconds: 1500), () {
@@ -1418,20 +1437,19 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
 
       // 清除分析缓存
       _emotionService.clearCache();
-      
+
       // 重置设置到默认值
       await _settingsService.updateSettings(AppSettings.defaultSettings());
-      
+
       // TODO: 后续版本将实现清除心情记录和Fragment数据
 
       // 关闭加载对话框
       if (mounted) Navigator.of(context).pop();
-      
+
       _showSuccessSnackBar('所有数据已清除');
-      
+
       // 重新加载设置状态
       await _loadSettings();
-      
     } catch (e) {
       // 关闭加载对话框
       if (mounted) Navigator.of(context).pop();
@@ -1442,7 +1460,7 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
   /// 显示缓存统计
   void _showCacheStats() {
     final stats = _emotionService.getCacheStats();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1458,9 +1476,9 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
             const SizedBox(height: 8),
             Text(
               '缓存使用率: ${(stats['totalEntries'] / stats['maxSize'] * 100).toStringAsFixed(1)}%',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

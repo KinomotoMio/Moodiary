@@ -33,9 +33,11 @@ class NotificationService {
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('Asia/Shanghai'));
 
-      // 请求通知权限
-      if (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.macOS) {
+      // 请求通知权限（iOS/macOS/Android 13+）
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.android)) {
         final status = await Permission.notification.request();
         if (!status.isGranted) {
           if (kDebugMode) {
@@ -46,7 +48,9 @@ class NotificationService {
       }
 
       // Android设置
-      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
 
       // iOS/macOS设置
       const darwinSettings = DarwinInitializationSettings(
@@ -68,6 +72,31 @@ class NotificationService {
       );
 
       _isInitialized = initialized ?? false;
+
+      if (_isInitialized && defaultTargetPlatform == TargetPlatform.android) {
+        final androidPlugin = _notifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+
+        await androidPlugin?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'daily_reminder',
+            '每日提醒',
+            description: '提醒你记录今天的心情',
+            importance: Importance.high,
+          ),
+        );
+
+        await androidPlugin?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'test',
+            '测试通知',
+            description: '测试通知是否正常工作',
+            importance: Importance.high,
+          ),
+        );
+      }
       return _isInitialized;
     } catch (e) {
       if (kDebugMode) {
@@ -224,11 +253,6 @@ class NotificationService {
       macOS: darwinDetails,
     );
 
-    await _notifications.show(
-      999,
-      '测试通知 🔔',
-      '通知功能正常工作！',
-      notificationDetails,
-    );
+    await _notifications.show(999, '测试通知 🔔', '通知功能正常工作！', notificationDetails);
   }
 }
