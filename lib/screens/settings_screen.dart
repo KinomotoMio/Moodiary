@@ -3,7 +3,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/settings_service.dart';
 import '../services/emotion_service.dart';
 import '../services/fragment_storage_service.dart';
+import '../services/notification_service.dart';
+import '../services/impression_image_service.dart';
 import '../models/app_settings.dart';
+import '../models/art_style.dart';
 import '../enums/analysis_method.dart';
 
 /// 设置页面
@@ -24,10 +27,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settingsService = SettingsService.instance;
   final EmotionService _emotionService = EmotionService.instance;
   final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
-  
+  final NotificationService _notificationService = NotificationService.instance;
+  final ImpressionImageService _impressionService = ImpressionImageService.instance;
+
   final bool _isLoading = false;
   AnalysisStrategyStatus? _strategyStatus;
   bool _isTesting = false;
+
+  // 提醒设置
+  bool _reminderEnabled = false;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 21, minute: 0);
+
+  // 艺术风格
+  ArtStyle _selectedArtStyle = ArtStyles.miyazaki;
 
   @override
   void initState() {
@@ -36,7 +48,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    // 不再自动检查API连通性，设置页面加载应该是即时的
+    // 加载提醒设置
+    final reminderEnabled = await _notificationService.isReminderEnabled();
+    final reminderTimeStr = await _notificationService.getReminderTime();
+
+    // 加载艺术风格
+    final selectedStyle = await _impressionService.getSelectedStyle();
+
+    if (mounted) {
+      setState(() {
+        _reminderEnabled = reminderEnabled;
+        if (reminderTimeStr != null) {
+          final parts = reminderTimeStr.split(':');
+          _reminderTime = TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+        _selectedArtStyle = selectedStyle;
+      });
+    }
   }
 
   Future<void> _testAPIConnection() async {
@@ -119,6 +150,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildAIConfigSection(),
                     const SizedBox(height: 24),
                   ],
+                  _buildReminderSection(),
+                  const SizedBox(height: 24),
+                  _buildArtStyleSection(),
+                  const SizedBox(height: 24),
                   _buildDataSection(),
                   const SizedBox(height: 24),
                   _buildAboutSection(),
@@ -577,6 +612,196 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       _showErrorSnackBar('打开链接失败: $e');
     }
+  }
+
+  /// 提醒配置区域
+  Widget _buildReminderSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.notifications_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '每日提醒',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            ListTile(
+              leading: const Icon(Icons.alarm),
+              title: const Text('启用提醒'),
+              subtitle: Text(_reminderEnabled
+                  ? '每天 ${_reminderTime.format(context)} 提醒你记录心情'
+                  : '关闭后不会收到提醒通知'),
+              trailing: Switch(
+                value: _reminderEnabled,
+                onChanged: (value) async {
+                  if (value) {
+                    // 启用提醒 - 显示时间选择器
+                    await _showTimePickerDialog();
+                  } else {
+                    // 禁用提醒
+                    await _notificationService.cancelDailyReminder();
+                    setState(() {
+                      _reminderEnabled = false;
+                    });
+                    _showSuccessSnackBar('已关闭每日提醒');
+                  }
+                },
+              ),
+            ),
+
+            if (_reminderEnabled) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.access_time),
+                title: const Text('提醒时间'),
+                subtitle: Text(_reminderTime.format(context)),
+                trailing: const Icon(Icons.edit_outlined),
+                onTap: _showTimePickerDialog,
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.notification_add_outlined),
+                title: const Text('发送测试通知'),
+                subtitle: const Text('测试通知是否正常工作'),
+                trailing: const Icon(Icons.send_outlined),
+                onTap: () async {
+                  await _notificationService.sendTestNotification();
+                  _showSuccessSnackBar('测试通知已发送');
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 艺术风格选择区域
+  Widget _buildArtStyleSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.palette_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '印象画风格',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '选择你喜欢的艺术风格，应用会用这种风格为你的心情生成印象画',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 显示所有艺术风格
+            ...ArtStyles.getAllStyles().map((style) {
+              final isSelected = style.id == _selectedArtStyle.id;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  elevation: isSelected ? 2 : 0,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surface,
+                  child: ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline,
+                    ),
+                    title: Text(
+                      '${style.name} - ${style.artist}',
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    subtitle: Text(
+                      style.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => _selectArtStyle(style),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 显示时间选择器
+  Future<void> _showTimePickerDialog() async {
+    final newTime = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime,
+      helpText: '选择提醒时间',
+      cancelText: '取消',
+      confirmText: '确定',
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+
+    if (newTime != null) {
+      final success = await _notificationService.setDailyReminder(
+        hour: newTime.hour,
+        minute: newTime.minute,
+      );
+
+      if (success && mounted) {
+        setState(() {
+          _reminderEnabled = true;
+          _reminderTime = newTime;
+        });
+        _showSuccessSnackBar('提醒时间已设置为 ${newTime.format(context)}');
+      } else if (mounted) {
+        _showErrorSnackBar('设置提醒失败，请检查通知权限');
+      }
+    }
+  }
+
+  /// 选择艺术风格
+  Future<void> _selectArtStyle(ArtStyle style) async {
+    await _impressionService.setSelectedStyle(style.id);
+    setState(() {
+      _selectedArtStyle = style;
+    });
+    _showSuccessSnackBar('已选择 ${style.name} 风格');
   }
 
   /// 获取提供商帮助文本
