@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../utils/web_notification_stub.dart'
+    if (dart.library.html) '../utils/web_notification_html.dart'
+    as web_notifications;
+
 /// 本地通知服务
 ///
 /// 提供定时提醒功能
@@ -28,16 +32,24 @@ class NotificationService {
   Future<bool> initialize() async {
     if (_isInitialized) return true;
 
+    if (kIsWeb) {
+      final granted = await web_notifications.requestPermission();
+      _isInitialized = granted;
+      if (!granted && kDebugMode) {
+        debugPrint('Web notifications permission denied');
+      }
+      return granted;
+    }
+
     try {
       // 初始化时区数据
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('Asia/Shanghai'));
 
       // 请求通知权限（iOS/macOS/Android 13+）
-      if (!kIsWeb &&
-          (defaultTargetPlatform == TargetPlatform.iOS ||
-              defaultTargetPlatform == TargetPlatform.macOS ||
-              defaultTargetPlatform == TargetPlatform.android)) {
+      if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.android) {
         final status = await Permission.notification.request();
         if (!status.isGranted) {
           if (kDebugMode) {
@@ -124,6 +136,21 @@ class NotificationService {
       if (!initialized) return false;
     }
 
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_reminderEnabledKey, true);
+      await prefs.setString(
+        _reminderTimeKey,
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+      );
+
+      if (kDebugMode) {
+        debugPrint('Daily reminder stored for web at $hour:$minute');
+      }
+
+      return true;
+    }
+
     try {
       // 取消现有提醒
       await cancelDailyReminder();
@@ -203,6 +230,12 @@ class NotificationService {
   /// 取消每日提醒
   Future<void> cancelDailyReminder() async {
     try {
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_reminderEnabledKey, false);
+        return;
+      }
+
       await _notifications.cancel(_dailyReminderId);
 
       // 更新设置
@@ -235,6 +268,17 @@ class NotificationService {
   Future<void> sendTestNotification() async {
     if (!_isInitialized) {
       await initialize();
+    }
+
+    if (kIsWeb) {
+      if (!web_notifications.canShowNotifications()) {
+        if (kDebugMode) {
+          debugPrint('Web notifications not permitted');
+        }
+        return;
+      }
+      web_notifications.showNotification(title: '测试通知 🔔', body: '通知功能正常工作！');
+      return;
     }
 
     const androidDetails = AndroidNotificationDetails(
