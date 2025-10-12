@@ -19,17 +19,18 @@ class TimelineScreen extends StatefulWidget {
 }
 
 class _TimelineScreenState extends State<TimelineScreen> {
-  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
   final SearchService _searchService = SearchService.instance;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  
+
   final Map<String, List<MoodFragment>> _fragmentsByDate = {};
   List<MoodFragment> _allFragments = [];
   bool _isLoading = true;
   MoodType? _selectedMoodFilter;
   bool _isSearchExpanded = false;
-  
+
   // 事件监听
   late StreamSubscription _moodDataSubscription;
 
@@ -51,16 +52,18 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setupEventListeners() {
-    _moodDataSubscription = StorageService.eventBus.on<MoodDataChangedEvent>().listen((_) {
-      if (mounted) {
-        _loadData();
-      }
-    });
+    _moodDataSubscription = StorageService.eventBus
+        .on<MoodDataChangedEvent>()
+        .listen((_) {
+          if (mounted) {
+            _loadData();
+          }
+        });
   }
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -103,12 +106,17 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
     // 构建搜索条件
     final criteria = SearchCriteria(
-      textQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      textQuery: _searchController.text.isNotEmpty
+          ? _searchController.text
+          : null,
       moodFilter: _selectedMoodFilter,
     );
 
     // 使用SearchService进行筛选
-    final filteredFragments = _searchService.filterFragments(_allFragments, criteria);
+    final filteredFragments = _searchService.filterFragments(
+      _allFragments,
+      criteria,
+    );
 
     // 按日期重新组织
     _organizeFragmentsByDate(filteredFragments);
@@ -137,7 +145,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   void _navigateToMoodDetail(MoodFragment fragment) async {
     final heroTag = NavigationUtils.getHeroTag(fragment.id, 'timeline');
     final result = await NavigationUtils.navigateToMoodDetail(
-      context, 
+      context,
       fragment.toMoodEntry(),
       heroTag: heroTag,
     );
@@ -171,9 +179,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
             child: const Text('删除'),
           ),
         ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -183,15 +189,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
       await _fragmentStorage.deleteFragment(fragment.id);
       await _loadData(); // 重新加载数据并重新筛选组织
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('记录已删除')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('记录已删除')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('删除失败: $e')));
       }
     }
   }
@@ -240,7 +246,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 value: MoodType.positive,
                 child: Row(
                   children: [
-                    Icon(Icons.sentiment_very_satisfied, color: Colors.green, size: 20),
+                    Icon(
+                      Icons.sentiment_very_satisfied,
+                      color: Colors.green,
+                      size: 20,
+                    ),
                     SizedBox(width: 8),
                     Text('积极'),
                   ],
@@ -250,7 +260,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 value: MoodType.negative,
                 child: Row(
                   children: [
-                    Icon(Icons.sentiment_very_dissatisfied, color: Colors.red, size: 20),
+                    Icon(
+                      Icons.sentiment_very_dissatisfied,
+                      color: Colors.red,
+                      size: 20,
+                    ),
                     SizedBox(width: 8),
                     Text('消极'),
                   ],
@@ -290,7 +304,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   Widget _buildTimelineContent() {
     final filteredDateKeys = _getFilteredDateKeys();
-    
+
     if (filteredDateKeys.isEmpty) {
       return _buildEmptyState();
     }
@@ -302,19 +316,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
       itemBuilder: (context, index) {
         final dateKey = filteredDateKeys[index];
         final dayFragments = _getFilteredFragmentsForDate(dateKey);
-        
+
         if (dayFragments.isEmpty) return const SizedBox.shrink();
-        
+
         return _buildTimelineDay(dateKey, dayFragments, index);
       },
     );
   }
 
-  Widget _buildTimelineDay(String dateKey, List<MoodFragment> fragments, int dayIndex) {
+  Widget _buildTimelineDay(
+    String dateKey,
+    List<MoodFragment> fragments,
+    int dayIndex,
+  ) {
     final date = DateTime.parse(dateKey);
     final isToday = DateFormat('yyyy-MM-dd').format(DateTime.now()) == dateKey;
-    final isYesterday = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1))) == dateKey;
-    
+    final isYesterday =
+        DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now().subtract(const Duration(days: 1))) ==
+        dateKey;
+
     String dateLabel;
     if (isToday) {
       dateLabel = '今天';
@@ -333,7 +355,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
@@ -356,13 +381,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ],
           ),
         ),
-        
+
         // 时间线内容
         ...fragments.asMap().entries.map((entry) {
           final fragmentIndex = entry.key;
           final fragment = entry.value;
           final isLast = fragmentIndex == fragments.length - 1;
-          
+
           return _buildTimelineItem(fragment, isLast);
         }),
       ],
@@ -372,7 +397,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   Widget _buildTimelineItem(MoodFragment fragment, bool isLast) {
     final time = DateFormat('HH:mm').format(fragment.timestamp);
     final moodColor = _getMoodColor(fragment.mood);
-    
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +420,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
               ),
             ],
           ),
-          
+
           // 时间轴线和圆点
           Column(
             children: [
@@ -420,23 +445,26 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   ],
                 ),
               ),
-              
+
               // 连接线
               if (!isLast)
-                Container(
-                  width: 2,
-                  height: 60,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(1),
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
                   ),
                 ),
             ],
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // 内容卡片
           Expanded(
             child: Container(
@@ -460,8 +488,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Widget _buildEmptyState() {
-    final filterText = _selectedMoodFilter == null ? '记录' : '${_selectedMoodFilter!.displayName}记录';
-    
+    final filterText = _selectedMoodFilter == null
+        ? '记录'
+        : '${_selectedMoodFilter!.displayName}记录';
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -471,7 +501,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
             Icon(
               Icons.timeline,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 16),
             Text(
@@ -484,7 +516,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
             Text(
               '开始记录你的心情故事吧',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -492,7 +526,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
       ),
     );
   }
-
 
   Color _getMoodColor(MoodType mood) {
     switch (mood) {
@@ -529,7 +562,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            fillColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -538,24 +573,36 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   Widget _buildSearchStats() {
     if (!_hasActiveFilters() || _isLoading) return const SizedBox();
-    
+
     // 构建搜索条件
     final criteria = SearchCriteria(
-      textQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      textQuery: _searchController.text.isNotEmpty
+          ? _searchController.text
+          : null,
       moodFilter: _selectedMoodFilter,
     );
 
     // 使用SearchService获取统计
-    final filteredFragments = _searchService.filterFragments(_allFragments, criteria);
-    final stats = _searchService.getSearchStats(_allFragments, filteredFragments);
-    
-    final percentage = stats.filterRatio > 0 ? (stats.filterRatio * 100).round() : 0;
-    
+    final filteredFragments = _searchService.filterFragments(
+      _allFragments,
+      criteria,
+    );
+    final stats = _searchService.getSearchStats(
+      _allFragments,
+      filteredFragments,
+    );
+
+    final percentage = stats.filterRatio > 0
+        ? (stats.filterRatio * 100).round()
+        : 0;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
@@ -598,9 +645,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
               if (percentage < 100) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
