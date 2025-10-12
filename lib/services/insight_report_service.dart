@@ -21,12 +21,14 @@ import 'settings_service.dart';
 /// 3. 历史报告查看
 class InsightReportService {
   static InsightReportService? _instance;
-  static InsightReportService get instance => _instance ??= InsightReportService._();
+  static InsightReportService get instance =>
+      _instance ??= InsightReportService._();
 
   InsightReportService._();
 
   // 依赖服务
-  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
   final LLMClient _llmClient = LLMClient.instance;
   final SettingsService _settingsService = SettingsService.instance;
 
@@ -50,7 +52,9 @@ class InsightReportService {
   }
 
   /// 生成当前周报
-  Future<InsightReport> generateCurrentWeeklyReport({bool forceRegenerate = false}) async {
+  Future<InsightReport> generateCurrentWeeklyReport({
+    bool forceRegenerate = false,
+  }) async {
     final now = DateTime.now();
     final startOfWeek = _getStartOfWeek(now);
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
@@ -64,7 +68,9 @@ class InsightReportService {
   }
 
   /// 生成当前月报
-  Future<InsightReport> generateCurrentMonthlyReport({bool forceRegenerate = false}) async {
+  Future<InsightReport> generateCurrentMonthlyReport({
+    bool forceRegenerate = false,
+  }) async {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     final endOfMonth = DateTime(now.year, now.month + 1, 0);
@@ -107,7 +113,9 @@ class InsightReportService {
     // 如果记录数量不足，使用默认内容
     if (fragments.length < 3) {
       if (kDebugMode) {
-        debugPrint('Insufficient data for report (${fragments.length} entries)');
+        debugPrint(
+          'Insufficient data for report (${fragments.length} entries)',
+        );
       }
 
       final defaultContent = InsightReportPrompt.getDefaultContent(type);
@@ -162,7 +170,8 @@ class InsightReportService {
         endDate: endDate,
         stats: stats,
         coreInsight: defaultContent['core_insight']!,
-        emotionPattern: '这${type == ReportType.weekly ? '周' : '个月'}记录了${fragments.length}条心情。因为技术原因，暂时无法生成个性化的洞察，但你的记录都安全地保存着。',
+        emotionPattern:
+            '这${type == ReportType.weekly ? '周' : '个月'}记录了${fragments.length}条心情。因为技术原因，暂时无法生成个性化的洞察，但你的记录都安全地保存着。',
         behaviorSuggestion: defaultContent['behavior_suggestion']!,
       );
 
@@ -185,7 +194,9 @@ class InsightReportService {
 
     return allFragments.where((fragment) {
       final timestamp = fragment.timestamp;
-      return timestamp.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+      return timestamp.isAfter(
+            startDate.subtract(const Duration(seconds: 1)),
+          ) &&
           timestamp.isBefore(endDate.add(const Duration(days: 1)));
     }).toList();
   }
@@ -233,10 +244,12 @@ class InsightReportService {
     final lowestScore = scores.reduce((a, b) => a < b ? a : b);
 
     // 计算情绪波动度（标准差）
-    final variance = scores.fold<double>(
-      0,
-      (sum, score) => sum + pow(score - averageScore, 2),
-    ) / scores.length;
+    final variance =
+        scores.fold<double>(
+          0,
+          (sum, score) => sum + pow(score - averageScore, 2),
+        ) /
+        scores.length;
     final emotionVolatility = sqrt(variance);
 
     // 统计高频标签
@@ -281,7 +294,9 @@ class InsightReportService {
           // 计算指数退避时间：1秒、2秒、4秒
           final backoffMs = initialBackoffMs * (1 << (attempt - 1));
           if (kDebugMode) {
-            debugPrint('Retrying LLM call (attempt ${attempt + 1}/$maxRetries) after ${backoffMs}ms...');
+            debugPrint(
+              'Retrying LLM call (attempt ${attempt + 1}/$maxRetries) after ${backoffMs}ms...',
+            );
           }
           await Future.delayed(Duration(milliseconds: backoffMs));
         }
@@ -304,7 +319,9 @@ class InsightReportService {
 
         // 调用LLM
         if (kDebugMode) {
-          debugPrint('Calling LLM with provider: $providerName (attempt ${attempt + 1}/$maxRetries)');
+          debugPrint(
+            'Calling LLM with provider: $providerName (attempt ${attempt + 1}/$maxRetries)',
+          );
           debugPrint('Prompt length: ${prompt.length} characters');
         }
 
@@ -320,7 +337,9 @@ class InsightReportService {
 
         if (kDebugMode) {
           debugPrint('LLM response length: ${response.length} characters');
-          debugPrint('LLM response preview: ${response.substring(0, min(200, response.length))}...');
+          debugPrint(
+            'LLM response preview: ${response.substring(0, min(200, response.length))}...',
+          );
         }
 
         // 解析响应
@@ -336,34 +355,52 @@ class InsightReportService {
         if (kDebugMode) {
           debugPrint('Parsed content lengths:');
           debugPrint('  core_insight: ${content['core_insight']?.length ?? 0}');
-          debugPrint('  emotion_pattern: ${content['emotion_pattern']?.length ?? 0}');
-          debugPrint('  behavior_suggestion: ${content['behavior_suggestion']?.length ?? 0}');
+          debugPrint(
+            '  emotion_pattern: ${content['emotion_pattern']?.length ?? 0}',
+          );
+          debugPrint(
+            '  behavior_suggestion: ${content['behavior_suggestion']?.length ?? 0}',
+          );
         }
 
         // 验证内容质量
         if (!InsightReportPrompt.validateContent(content)) {
           if (kDebugMode) {
             debugPrint('Content quality validation failed:');
-            debugPrint('  core_insight length: ${content['core_insight']?.length ?? 0} (expected: 150-700)');
-            debugPrint('  emotion_pattern length: ${content['emotion_pattern']?.length ?? 0} (expected: 300-1500)');
-            debugPrint('  behavior_suggestion length: ${content['behavior_suggestion']?.length ?? 0} (expected: 200-1200)');
+            debugPrint(
+              '  core_insight length: ${content['core_insight']?.length ?? 0} (expected: 150-700)',
+            );
+            debugPrint(
+              '  emotion_pattern length: ${content['emotion_pattern']?.length ?? 0} (expected: 300-1500)',
+            );
+            debugPrint(
+              '  behavior_suggestion length: ${content['behavior_suggestion']?.length ?? 0} (expected: 200-1200)',
+            );
           }
-          throw Exception('Generated content quality check failed - length out of range');
+          throw Exception(
+            'Generated content quality check failed - length out of range',
+          );
         }
 
         if (kDebugMode) {
-          debugPrint('✓ Report content validation passed (attempt ${attempt + 1})');
+          debugPrint(
+            '✓ Report content validation passed (attempt ${attempt + 1})',
+          );
         }
 
         return content;
       } on LLMException catch (e) {
         lastException = e;
         if (kDebugMode) {
-          debugPrint('LLM call failed (attempt ${attempt + 1}/$maxRetries): $e');
+          debugPrint(
+            'LLM call failed (attempt ${attempt + 1}/$maxRetries): $e',
+          );
         }
 
         // 如果是超时或网络错误，可以重试
-        if (e.message.contains('超时') || e.message.contains('网络') || e.message.contains('timeout')) {
+        if (e.message.contains('超时') ||
+            e.message.contains('网络') ||
+            e.message.contains('timeout')) {
           if (attempt < maxRetries - 1) {
             continue; // 继续重试
           }
@@ -373,7 +410,9 @@ class InsightReportService {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Unexpected error during LLM call (attempt ${attempt + 1}/$maxRetries): $e');
+          debugPrint(
+            'Unexpected error during LLM call (attempt ${attempt + 1}/$maxRetries): $e',
+          );
         }
         // 非LLM异常也尝试重试
         if (attempt < maxRetries - 1) {
@@ -409,7 +448,9 @@ class InsightReportService {
 
       for (final entry in data.entries) {
         try {
-          final report = InsightReport.fromJson(entry.value as Map<String, dynamic>);
+          final report = InsightReport.fromJson(
+            entry.value as Map<String, dynamic>,
+          );
 
           // 应用过滤条件
           if (filterType != null && report.type != filterType) {
@@ -528,7 +569,9 @@ class InsightReportService {
 
     for (final entry in data.entries) {
       try {
-        final report = InsightReport.fromJson(entry.value as Map<String, dynamic>);
+        final report = InsightReport.fromJson(
+          entry.value as Map<String, dynamic>,
+        );
         if (report.endDate.isBefore(cutoffDate) && !report.isFavorite) {
           keysToRemove.add(entry.key);
         }
@@ -559,12 +602,28 @@ class InsightReportService {
     }
   }
 
+  /// 清除所有洞察报告
+  Future<void> clearAllReports() async {
+    _cache.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageKey);
+
+    StorageService.eventBus.fire(DataClearedEvent());
+    StorageService.eventBus.fire(MoodDataChangedEvent());
+
+    if (kDebugMode) {
+      debugPrint('Insight reports cleared');
+    }
+  }
+
   /// 获取周的起始日期（周一）
   DateTime _getStartOfWeek(DateTime date) {
     final weekday = date.weekday; // 1 = Monday, 7 = Sunday
-    return DateTime(date.year, date.month, date.day).subtract(
-      Duration(days: weekday - 1),
-    );
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: weekday - 1));
   }
 
   /// 生成报告ID

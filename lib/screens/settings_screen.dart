@@ -5,6 +5,9 @@ import '../services/emotion_service.dart';
 import '../services/fragment_storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/impression_image_service.dart';
+import '../services/storage_service.dart';
+import '../services/daily_summary_service.dart';
+import '../services/insight_report_service.dart';
 import '../models/app_settings.dart';
 import '../models/art_style.dart';
 import '../enums/analysis_method.dart';
@@ -1438,10 +1441,17 @@ Moodiary想要做的，就是帮你找到那片静海。不是让你的情绪变
       // 清除分析缓存
       _emotionService.clearCache();
 
-      // 重置设置到默认值
-      await _settingsService.updateSettings(AppSettings.defaultSettings());
+      // 清除核心数据
+      await StorageService.instance.clearAllMoodEntries();
+      await FragmentStorageService.instance.clearAllFragments();
+      await DailySummaryService.instance.clearAllSummaries();
+      await InsightReportService.instance.clearAllReports();
 
-      // TODO: 后续版本将实现清除心情记录和Fragment数据
+      // 重置设置到默认值
+      await _settingsService.clearAllSettings();
+
+      // 取消提醒
+      await _notificationService.cancelDailyReminder();
 
       // 关闭加载对话框
       if (mounted) Navigator.of(context).pop();
