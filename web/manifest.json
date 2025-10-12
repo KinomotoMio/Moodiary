@@ -1,0 +1,35 @@
+{
+    "name": "Moodiary",
+    "short_name": "Moodiary",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#4F77FF",
+    "theme_color": "#4F77FF",
+    "description": "Moodiary 是一款以隐私为先的情绪日记，结合 AI 洞察与暖心陪伴，帮助你记录、理解并调节每日心情。",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
