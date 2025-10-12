@@ -19,12 +19,14 @@ import 'settings_service.dart';
 /// 3. 历史睡前内容查看
 class DailySummaryService {
   static DailySummaryService? _instance;
-  static DailySummaryService get instance => _instance ??= DailySummaryService._();
+  static DailySummaryService get instance =>
+      _instance ??= DailySummaryService._();
 
   DailySummaryService._();
 
   // 依赖服务
-  final FragmentStorageService _fragmentStorage = FragmentStorageService.instance;
+  final FragmentStorageService _fragmentStorage =
+      FragmentStorageService.instance;
   final LLMClient _llmClient = LLMClient.instance;
   final SettingsService _settingsService = SettingsService.instance;
 
@@ -54,7 +56,9 @@ class DailySummaryService {
   ///
   /// 如果已有缓存且未过期，直接返回缓存
   /// [forceRegenerate] 强制重新生成（忽略缓存）
-  Future<DailySummary> generateTodaySummary({bool forceRegenerate = false}) async {
+  Future<DailySummary> generateTodaySummary({
+    bool forceRegenerate = false,
+  }) async {
     final today = DateTime.now();
     return generateSummaryForDate(today, forceRegenerate: forceRegenerate);
   }
@@ -140,7 +144,8 @@ class DailySummaryService {
         date: date,
         fragmentCount: fragments.length,
         eventSummary: defaultContent['event_summary']!,
-        emotionReview: '今天记录了${fragments.length}条心情。因为技术原因，暂时无法生成个性化的回顾，但你的记录都安全地保存着。明天可以再试试看。',
+        emotionReview:
+            '今天记录了${fragments.length}条心情。因为技术原因，暂时无法生成个性化的回顾，但你的记录都安全地保存着。明天可以再试试看。',
         meditationGuide: defaultContent['meditation_guide']!,
         dominantMood: stats['dominantMoodType'] as MoodType?,
         averageScore: stats['averageScore'] as double?,
@@ -275,7 +280,9 @@ class DailySummaryService {
 
       for (final entry in data.entries) {
         try {
-          final summary = DailySummary.fromJson(entry.value as Map<String, dynamic>);
+          final summary = DailySummary.fromJson(
+            entry.value as Map<String, dynamic>,
+          );
 
           // 应用过滤条件
           if (onlyFavorites && !summary.isFavorite) {
@@ -398,7 +405,9 @@ class DailySummaryService {
 
     for (final entry in data.entries) {
       try {
-        final summary = DailySummary.fromJson(entry.value as Map<String, dynamic>);
+        final summary = DailySummary.fromJson(
+          entry.value as Map<String, dynamic>,
+        );
         if (summary.date.isBefore(cutoffDate) && !summary.isFavorite) {
           keysToRemove.add(entry.key);
         }
@@ -439,6 +448,23 @@ class DailySummaryService {
   Future<void> _saveFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_favoritesKey, jsonEncode(_favorites.toList()));
+  }
+
+  /// 清除所有睡前摘要及收藏
+  Future<void> clearAllSummaries() async {
+    _cache.clear();
+    _favorites.clear();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageKey);
+    await prefs.remove(_favoritesKey);
+
+    StorageService.eventBus.fire(DataClearedEvent());
+    StorageService.eventBus.fire(MoodDataChangedEvent());
+
+    if (kDebugMode) {
+      debugPrint('Daily summaries cleared');
+    }
   }
 
   /// 清除所有缓存
