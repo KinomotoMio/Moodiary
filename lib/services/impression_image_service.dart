@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/art_style.dart';
+import 'settings_service.dart';
 
 /// 图片生成模式
 enum GenerationMode {
@@ -152,8 +153,8 @@ class ImpressionImageService {
   /// 调用SiliconFlow文生图API
   Future<String> _callSiliconFlowImageAPI(String prompt) async {
     // 从设置服务获取API Key（复用对话模型的Key）
-    final prefs = await SharedPreferences.getInstance();
-    final apiKey = prefs.getString('llm_api_key');
+    final settings = SettingsService.instance.currentSettings;
+    final apiKey = settings.llmApiKey;
 
     if (apiKey == null || apiKey.isEmpty) {
       throw Exception('请先在设置中配置SiliconFlow API Key');
@@ -184,8 +185,16 @@ class ImpressionImageService {
         throw Exception('API返回图片列表为空');
       }
     } else {
-      final error = jsonDecode(response.body);
-      throw Exception('API调用失败: ${response.statusCode} - ${error['error']?['message'] ?? 'Unknown error'}');
+      final errorBody = response.body;
+      if (kDebugMode) {
+        debugPrint('SiliconFlow Image API Error: $errorBody');
+      }
+      try {
+        final error = jsonDecode(errorBody);
+        throw Exception('文生图API调用失败: ${response.statusCode} - ${error['error']?['message'] ?? 'Unknown error'}');
+      } catch (e) {
+        throw Exception('文生图API调用失败: ${response.statusCode}');
+      }
     }
   }
 
